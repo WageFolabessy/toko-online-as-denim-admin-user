@@ -165,7 +165,7 @@ const Product = () => {
       name: "Harga Diskon",
       selector: (row) => row.sale_price,
       sortable: true,
-      cell: (row) => `Rp ${row.sale_price.toLocaleString("id-ID")}`,
+      cell: (row) => `Rp ${row.sale_price ? row.sale_price.toLocaleString("id-ID") : "0"}`,
       right: true,
       minWidth: "150px",
     },
@@ -293,7 +293,7 @@ const Product = () => {
             columns={columns}
             data={filteredProducts}
             pagination
-            paginationPerPage={5}
+            paginationPerPage={10}
             paginationRowsPerPageOptions={[10, 15, 20, 50, 100]}
             paginationComponentOptions={{
               rowsPerPageText: "Baris per halaman:",

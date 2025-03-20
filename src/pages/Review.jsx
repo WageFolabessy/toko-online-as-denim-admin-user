@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useContext } from "react";
 import DataTable from "react-data-table-component";
-import { FaEye, FaTrash } from "react-icons/fa";
+import { FaEye } from "react-icons/fa";
 import ReviewDetailModal from "../components/Review/ReviewDetailModal";
 import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
@@ -217,8 +217,8 @@ const Review = () => {
           columns={columns}
           data={filteredReviews}
           pagination
-          paginationPerPage={5}
-          paginationRowsPerPageOptions={[5, 10, 15, 20, 50]}
+          paginationPerPage={10}
+          paginationRowsPerPageOptions={[10, 15, 20, 50, 100]}
           paginationComponentOptions={{
             rowsPerPageText: "Baris per halaman:",
             rangeSeparatorText: "dari",

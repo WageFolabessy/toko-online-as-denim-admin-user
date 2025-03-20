@@ -9,6 +9,7 @@ const EditCategoryModal = ({ isOpen, onClose, category, setCategories }) => {
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
+  const [errors, setErrors] = useState({});
 
   const { authFetch } = useContext(AppContext);
 
@@ -18,7 +19,10 @@ const EditCategoryModal = ({ isOpen, onClose, category, setCategories }) => {
       setFormData({
         category_name: category.category_name || "",
       });
-      setImagePreview(category.image ? `/storage/${category.image}` : "");
+      setImagePreview(
+        category.image ? `http://127.0.0.1:8000/storage/${category.image}` : ""
+      );
+      setErrors({});
     }
   }, [category]);
 
@@ -26,6 +30,11 @@ const EditCategoryModal = ({ isOpen, onClose, category, setCategories }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Hapus error untuk field yang diubah
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   // Handler untuk perubahan file gambar
@@ -37,8 +46,15 @@ const EditCategoryModal = ({ isOpen, onClose, category, setCategories }) => {
     } else {
       setImageFile(null);
       setImagePreview(
-        category && category.image ? `http://127.0.0.1:8000/storage/${category.image}` : ""
+        category && category.image
+          ? `http://127.0.0.1:8000/storage/${category.image}`
+          : ""
       );
+    }
+
+    // Hapus error untuk field 'image'
+    if (errors.image) {
+      setErrors((prev) => ({ ...prev, image: null }));
     }
   };
 
@@ -80,19 +96,17 @@ const EditCategoryModal = ({ isOpen, onClose, category, setCategories }) => {
       const result = text ? JSON.parse(text) : {};
 
       if (!response.ok) {
-        if (result.message) {
-          toast.error(result.message);
-        }
-        if (result.errors) {
-          Object.values(result.errors).forEach((errArray) => {
-            errArray.forEach((msg) => toast.error(msg));
-          });
+        // Jika validasi error (status 422), tampilkan error di atas field
+        if (response.status === 422 && result.errors) {
+          setErrors(result.errors);
+        } else {
+          // Error lain ditampilkan melalui toast
+          toast.error(result.message || "Terjadi kesalahan.");
         }
         return;
       }
 
       toast.success(result.message);
-
       // Update state categories dengan data yang telah diperbarui
       setCategories((prevCategories) =>
         prevCategories.map((item) =>
@@ -123,8 +137,15 @@ const EditCategoryModal = ({ isOpen, onClose, category, setCategories }) => {
             onChange={handleChange}
             required
             placeholder="Misal: Jeans"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200"
+            className={`w-full px-4 py-2 border ${
+              errors.category_name ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200`}
           />
+          {errors.category_name && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.category_name[0]}
+            </p>
+          )}
         </div>
         {/* Gambar Kategori */}
         <div>
@@ -138,14 +159,19 @@ const EditCategoryModal = ({ isOpen, onClose, category, setCategories }) => {
               onChange={handleImageChange}
               className="w-full"
             />
-            {imagePreview && (
+          </div>
+          {errors.image && (
+            <p className="text-red-500 text-sm mt-1">{errors.image[0]}</p>
+          )}
+          {imagePreview && (
+            <div className="mt-4">
               <img
                 src={imagePreview}
                 alt="Pratinjau Gambar"
                 className="w-20 h-20 object-cover rounded-md shadow-md"
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
         {/* Tombol */}
         <div className="flex justify-end space-x-3 pt-6">

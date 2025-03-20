@@ -264,7 +264,7 @@ const Admin = () => {
             columns={columns}
             data={filteredAdmins}
             pagination
-            paginationPerPage={5}
+            paginationPerPage={10}
             paginationRowsPerPageOptions={[10, 15, 20, 50, 100]}
             paginationComponentOptions={{
               rowsPerPageText: "Baris per halaman:",

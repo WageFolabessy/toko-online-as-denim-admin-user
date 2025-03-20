@@ -96,11 +96,12 @@ const SalesReport = () => {
   };
 
   // Filter data berdasarkan pencarian (misalnya berdasarkan nomor order atau nama produk)
-  const filteredReports = salesReports.filter((report) =>
-    (report.order_number &&
-      report.order_number.toLowerCase().includes(filterText.toLowerCase())) ||
-    (report.product_name &&
-      report.product_name.toLowerCase().includes(filterText.toLowerCase()))
+  const filteredReports = salesReports.filter(
+    (report) =>
+      (report.order_number &&
+        report.order_number.toLowerCase().includes(filterText.toLowerCase())) ||
+      (report.product_name &&
+        report.product_name.toLowerCase().includes(filterText.toLowerCase()))
   );
 
   const columns = [
@@ -202,12 +203,12 @@ const SalesReport = () => {
     });
     const marginLeft = 40;
     const marginTop = 40;
-    
+
     // Tampilkan nama toko "AS Denim"
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.text("AS Denim", marginLeft, marginTop);
-    
+
     // Judul laporan
     doc.setFont("helvetica", "normal");
     doc.setFontSize(16);
@@ -228,13 +229,22 @@ const SalesReport = () => {
         year: "numeric",
       });
       doc.setFontSize(12);
-      doc.text(`Periode: ${formattedStart} s/d ${formattedEnd}`, marginLeft, startY);
+      doc.text(
+        `Periode: ${formattedStart} s/d ${formattedEnd}`,
+        marginLeft,
+        startY
+      );
       startY += 20;
     }
 
     // Gambar garis pemisah
     doc.setLineWidth(0.5);
-    doc.line(marginLeft, startY, doc.internal.pageSize.getWidth() - marginLeft, startY);
+    doc.line(
+      marginLeft,
+      startY,
+      doc.internal.pageSize.getWidth() - marginLeft,
+      startY
+    );
     startY += 10;
 
     // Header tabel untuk PDF
@@ -335,8 +345,8 @@ const SalesReport = () => {
           columns={columns}
           data={filteredReports}
           pagination
-          paginationPerPage={5}
-          paginationRowsPerPageOptions={[5, 10, 15, 20, 50]}
+          paginationPerPage={10}
+          paginationRowsPerPageOptions={[10, 15, 20, 50, 100]}
           paginationComponentOptions={{
             rowsPerPageText: "Baris per halaman:",
             rangeSeparatorText: "dari",

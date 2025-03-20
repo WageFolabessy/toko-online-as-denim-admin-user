@@ -1,4 +1,3 @@
-// AddCategoryModal.js
 import { useState, useEffect, useContext } from 'react';
 import Modal from '../Modal';
 import { toast } from 'react-toastify';

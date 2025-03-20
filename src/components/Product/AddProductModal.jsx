@@ -63,6 +63,14 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
       ...prevData,
       description: value,
     }));
+
+    // Clear error untuk deskripsi jika ada
+    if (errors.description) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        description: null,
+      }));
+    }
   };
 
   const handleImageChange = (e) => {
@@ -74,10 +82,11 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
     setImagePreviews(previews);
 
     // Clear image errors
-    if (errors.images) {
+    if (errors.images || errors["images.0"]) {
       setErrors((prevErrors) => ({
         ...prevErrors,
         images: null,
+        "images.0": null,
       }));
     }
   };
@@ -147,7 +156,7 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
         setImagePreviews([]);
         setErrors({});
       } else if (response.status === 422) {
-        // Handle validation errors
+        // Handle validation errors dengan menampilkan semua error di setiap field
         setErrors(result.errors || {});
       } else {
         toast.error(result.message || "Terjadi kesalahan.");
@@ -177,11 +186,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
               errors.product_name ? "border-red-500" : "border-gray-300"
             } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
-          {errors.product_name && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.product_name[0]}
-            </p>
-          )}
+          {errors.product_name &&
+            errors.product_name.map((msg, idx) => (
+              <p key={idx} className="text-red-500 text-sm mt-1">
+                {msg}
+              </p>
+            ))}
         </div>
         {/* Kategori */}
         <div>
@@ -204,9 +214,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
               </option>
             ))}
           </select>
-          {errors.category_id && (
-            <p className="text-red-500 text-sm mt-1">{errors.category_id[0]}</p>
-          )}
+          {errors.category_id &&
+            errors.category_id.map((msg, idx) => (
+              <p key={idx} className="text-red-500 text-sm mt-1">
+                {msg}
+              </p>
+            ))}
         </div>
         {/* Harga */}
         <div className="grid grid-cols-2 gap-4">
@@ -225,11 +238,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
                 errors.original_price ? "border-red-500" : "border-gray-300"
               } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-            {errors.original_price && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.original_price[0]}
-              </p>
-            )}
+            {errors.original_price &&
+              errors.original_price.map((msg, idx) => (
+                <p key={idx} className="text-red-500 text-sm mt-1">
+                  {msg}
+                </p>
+              ))}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -245,11 +259,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
                 errors.sale_price ? "border-red-500" : "border-gray-300"
               } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-            {errors.sale_price && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.sale_price[0]}
-              </p>
-            )}
+            {errors.sale_price &&
+              errors.sale_price.map((msg, idx) => (
+                <p key={idx} className="text-red-500 text-sm mt-1">
+                  {msg}
+                </p>
+              ))}
           </div>
         </div>
         {/* Ukuran, Stok, Berat */}
@@ -269,9 +284,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
                 errors.size ? "border-red-500" : "border-gray-300"
               } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-            {errors.size && (
-              <p className="text-red-500 text-sm mt-1">{errors.size[0]}</p>
-            )}
+            {errors.size &&
+              errors.size.map((msg, idx) => (
+                <p key={idx} className="text-red-500 text-sm mt-1">
+                  {msg}
+                </p>
+              ))}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -288,9 +306,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
                 errors.stock ? "border-red-500" : "border-gray-300"
               } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-            {errors.stock && (
-              <p className="text-red-500 text-sm mt-1">{errors.stock[0]}</p>
-            )}
+            {errors.stock &&
+              errors.stock.map((msg, idx) => (
+                <p key={idx} className="text-red-500 text-sm mt-1">
+                  {msg}
+                </p>
+              ))}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -307,9 +328,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
                 errors.weight ? "border-red-500" : "border-gray-300"
               } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-            {errors.weight && (
-              <p className="text-red-500 text-sm mt-1">{errors.weight[0]}</p>
-            )}
+            {errors.weight &&
+              errors.weight.map((msg, idx) => (
+                <p key={idx} className="text-red-500 text-sm mt-1">
+                  {msg}
+                </p>
+              ))}
           </div>
         </div>
         {/* Deskripsi */}
@@ -323,9 +347,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
             onChange={handleDescriptionChange}
             className="bg-white rounded-md"
           />
-          {errors.description && (
-            <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>
-          )}
+          {errors.description &&
+            errors.description.map((msg, idx) => (
+              <p key={idx} className="text-red-500 text-sm mt-1">
+                {msg}
+              </p>
+            ))}
         </div>
         {/* Gambar */}
         <div>
@@ -339,9 +366,12 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
             onChange={handleImageChange}
             className="w-full"
           />
-          {errors["images.0"] && (
-            <p className="text-red-500 text-sm mt-1">{errors["images.0"][0]}</p>
-          )}
+          {errors["images.0"] &&
+            errors["images.0"].map((msg, idx) => (
+              <p key={idx} className="text-red-500 text-sm mt-1">
+                {msg}
+              </p>
+            ))}
           {/* Preview selected images */}
           {imagePreviews.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-4">

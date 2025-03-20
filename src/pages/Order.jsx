@@ -288,8 +288,8 @@ const Order = () => {
             columns={columns}
             data={filteredOrders}
             pagination
-            paginationPerPage={5}
-            paginationRowsPerPageOptions={[5, 10, 15, 20, 50]}
+            paginationPerPage={10}
+            paginationRowsPerPageOptions={[10, 15, 20, 50, 100]}
             paginationComponentOptions={{
               rowsPerPageText: "Baris per halaman:",
               rangeSeparatorText: "dari",
