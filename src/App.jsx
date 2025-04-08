@@ -3,9 +3,12 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Components
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
+import Login from "./components/Login";
 
+// Pages
 import Dashboard from "./pages/Dashboard";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
@@ -16,25 +19,24 @@ import User from "./pages/User";
 import Review from "./pages/Review";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
-import Login from "./components/Login";
-
-import { AppContext } from "./context/AppContext";
 import SalesReport from "./pages/SaleReport";
 
+// Context
+import { AppContext } from "./context/AppContext";
 
 const App = () => {
   const { token } = useContext(AppContext);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col">
+    <div className="bg-gray-50 min-h-screen">
       <ToastContainer />
       {token ? (
         <>
           <Navbar setIsSidebarOpen={setIsSidebarOpen} />
-          <div className="mt-16 flex flex-1 overflow-hidden">
+          <div className="flex pt-16">
             <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-            <main className="flex-1 p-4 md:p-8 overflow-auto">
+            <main className="flex-1 min-h-screen p-4 md:p-6 overflow-y-auto">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />

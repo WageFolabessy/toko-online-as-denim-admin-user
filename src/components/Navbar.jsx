@@ -20,55 +20,47 @@ const Navbar = ({ setIsSidebarOpen }) => {
   }, []);
 
   return (
-    <nav className="fixed w-full top-0 z-50 bg-white shadow-md h-16">
-      <div className="flex items-center justify-between px-4 py-3 h-full">
-        {/* Tombol Menu Mobile */}
-        <button
-          onClick={() => setIsSidebarOpen((prev) => !prev)}
-          className="md:hidden p-2 text-gray-600 hover:text-gray-800 focus:outline-none"
-          aria-label="Toggle Sidebar"
-        >
-          <FiMenu className="w-6 h-6" />
-        </button>
+    <nav className="fixed top-0 w-full z-50 bg-white border-b shadow-sm h-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+        <div className="flex items-center">
+          {/* Sidebar toggle */}
+          <button
+            onClick={() => setIsSidebarOpen((prev) => !prev)}
+            className="md:hidden mr-4 text-gray-700 hover:text-black"
+          >
+            <FiMenu className="w-6 h-6" />
+          </button>
 
-        {/* Logo */}
-        <div className="flex items-center flex-1 justify-center md:justify-start">
+          {/* Logo */}
           <Link to="/">
-            <img
-              className="h-12 w-12"
-              src={assets.as_denim_logo}
-              alt="AS Denim Logo"
-            />
+            <img src={assets.as_denim_logo} alt="Logo" className="h-10 w-10" />
           </Link>
         </div>
 
-        {/* Menu Profil */}
+        {/* Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center space-x-1 focus:outline-none"
+            className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-black"
           >
-            {/* Tampilkan nama admin jika ada, default ke "Admin" */}
-            <span className="text-gray-700">{user?.name || "Admin"}</span>
-            <FiChevronDown className="w-5 h-5 text-gray-600" />
+            <span>{user?.name || "Admin"}</span>
+            <FiChevronDown className="w-5 h-5" />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded shadow-xl">
+            <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg overflow-hidden">
               <Link
                 to="/profile"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
                 onClick={() => setDropdownOpen(false)}
+                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
-                <FiUser className="mr-2" />
-                Profil
+                <FiUser className="mr-2" /> Profil
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100"
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
-                <FiLogOut className="mr-2" />
-                Keluar
+                <FiLogOut className="mr-2" /> Keluar
               </button>
             </div>
           )}
