@@ -165,7 +165,7 @@ const Product = () => {
       name: "Harga Diskon",
       selector: (row) => row.sale_price,
       sortable: true,
-      cell: (row) => `Rp ${row.sale_price ? row.sale_price.toLocaleString("id-ID") : "0"}`,
+      cell: (row) => `${row.sale_price ? "Rp " + row.sale_price.toLocaleString("id-ID") : "-"}`,
       right: true,
       minWidth: "150px",
     },

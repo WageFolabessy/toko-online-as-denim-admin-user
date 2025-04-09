@@ -115,12 +115,10 @@ const OrderDetailModal = ({ isOpen, onClose, order, updateOrderStatus }) => {
             onChange={handleStatusChange}
             className="w-full border px-3 py-2 rounded"
           >
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
+            <option value="awaiting_payment">Awaiting Payment</option>
+            <option value="pending">Pending</option>
+            <option value="processed">Processed</option>
           </select>
         </div>
         {/* Tombol */}
