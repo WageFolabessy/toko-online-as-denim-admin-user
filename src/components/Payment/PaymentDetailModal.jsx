@@ -1,56 +1,54 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Modal from "../Modal";
 
-const PaymentDetailModal = ({ isOpen, onClose, payment, updatePaymentStatus }) => {
-  // Jika payment.status adalah "expire", ubah menjadi "expired"
-  const getInitialStatus = (status) => (status === "expire" ? "expired" : status);
+const PaymentDetailModal = ({
+  isOpen,
+  onClose,
+  payment,
+}) => {
+  // Fungsi untuk menyesuaikan status payment jika diperlukan
+  const getInitialStatus = (status) =>
+    status === "expire" ? "expired" : status;
 
-  const [status, setStatus] = useState(payment ? getInitialStatus(payment.status) : "");
+  const [status, setStatus] = useState(
+    payment ? getInitialStatus(payment.status) : ""
+  );
 
-  // Perbarui state status jika data payment berubah
+  // Update state status jika data payment berubah
   useEffect(() => {
     if (payment) {
       setStatus(getInitialStatus(payment.status));
     }
   }, [payment]);
 
+  // Karena payment.metadata sudah di-cast ke array/object, kita langsung gunakan nilainya
+  const parsedMetadata = useMemo(() => {
+    if (!payment || !payment.metadata) {
+      return null;
+    }
+    return payment.metadata;
+  }, [payment]);
+
   if (!payment) return null;
 
-  const handleStatusChange = (e) => {
-    setStatus(e.target.value);
-  };
-
-  const handleUpdateStatus = () => {
-    updatePaymentStatus(payment.id, status);
-    onClose();
-  };
-
-  // Fungsi untuk merender detail transaksi berdasarkan metadata
+  // Fungsi merender detail transaksi berdasarkan metadata
   const renderTransactionDetails = () => {
-    if (!payment.metadata) {
+    if (!parsedMetadata) {
       return <p>Tidak ada informasi transaksi.</p>;
     }
-    let metadataObj = payment.metadata;
-    // Jika metadata berupa string JSON, coba parse menjadi objek
-    if (typeof metadataObj === "string") {
-      try {
-        metadataObj = JSON.parse(metadataObj);
-      } catch (e) {
-        // Jika gagal parse, tampilkan stringnya apa adanya
-      }
-    }
-    if (typeof metadataObj === "object" && metadataObj !== null) {
+    if (typeof parsedMetadata === "object" && parsedMetadata !== null) {
       return (
         <div>
-          {Object.entries(metadataObj).map(([key, value]) => (
+          {Object.entries(parsedMetadata).map(([key, value]) => (
             <p key={key}>
-              <strong>{key}:</strong> {value}
+              <strong>{key}:</strong>{" "}
+              {typeof value === "object" ? JSON.stringify(value) : value}
             </p>
           ))}
         </div>
       );
     }
-    return <p>{metadataObj}</p>;
+    return <p>{parsedMetadata}</p>;
   };
 
   return (
@@ -78,14 +76,15 @@ const PaymentDetailModal = ({ isOpen, onClose, payment, updatePaymentStatus }) =
           </p>
           <p>
             <strong>Status:</strong>{" "}
-            <span className="capitalize">{payment.status}</span>
+            <span className="capitalize">
+              {getInitialStatus(payment.status)}
+            </span>
           </p>
           <p>
-            <strong>Jumlah:</strong>{" "}
-            Rp{" "}
-            {payment.order?.total_amount
-              ? payment.order.total_amount.toLocaleString("id-ID")
-              : payment.amount.toLocaleString("id-ID")}
+            <strong>Jumlah:</strong> Rp{" "}
+            {(payment.order?.total_amount || payment.amount).toLocaleString(
+              "id-ID"
+            )}
           </p>
         </div>
         {/* Informasi Transaksi */}
@@ -99,23 +98,6 @@ const PaymentDetailModal = ({ isOpen, onClose, payment, updatePaymentStatus }) =
           </p>
           {renderTransactionDetails()}
         </div>
-        {/* Ubah Status Pembayaran */}
-        <div>
-          <label className="block mb-2 font-semibold">
-            Ubah Status Pembayaran
-          </label>
-          <select
-            value={status}
-            onChange={handleStatusChange}
-            className="w-full border px-3 py-2 rounded"
-          >
-            <option value="pending">Pending</option>
-            <option value="settlement">Settlement</option>
-            <option value="cancel">Cancel</option>
-            <option value="expired">Expired</option>
-            <option value="deny">Deny</option>
-          </select>
-        </div>
         {/* Tombol */}
         <div className="flex justify-end space-x-3">
           <button
@@ -124,13 +106,6 @@ const PaymentDetailModal = ({ isOpen, onClose, payment, updatePaymentStatus }) =
             className="px-5 py-2 rounded-md bg-gray-500 text-white hover:bg-gray-600 transition duration-200"
           >
             Tutup
-          </button>
-          <button
-            type="button"
-            onClick={handleUpdateStatus}
-            className="px-5 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition duration-200"
-          >
-            Perbarui Status
           </button>
         </div>
       </div>

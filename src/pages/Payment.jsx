@@ -3,7 +3,6 @@ import DataTable from "react-data-table-component";
 import { FaEye } from "react-icons/fa";
 import PaymentDetailModal from "../components/Payment/PaymentDetailModal";
 import { AppContext } from "../context/AppContext";
-import { toast } from "react-toastify";
 
 // Komponen Filter untuk pencarian dan reset
 const FilterComponent = ({ filterText, onFilter, onClear }) => (
@@ -71,34 +70,6 @@ const Payment = () => {
     setIsDetailModalOpen(false);
   };
 
-  // Fungsi untuk mengupdate status pembayaran melalui backend
-  const updatePaymentStatus = async (paymentId, newStatus) => {
-    try {
-      const response = await authFetch(`http://127.0.0.1:8000/api/admin/payments/${paymentId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Gagal memperbarui status pembayaran.");
-      }
-      // Perbarui status pada state payments secara optimistik
-      setPayments((prevPayments) =>
-        prevPayments.map((payment) =>
-          payment.id === paymentId ? { ...payment, status: newStatus } : payment
-        )
-      );
-      toast.success(data.message);
-    } catch (error) {
-      console.error("Gagal memperbarui status pembayaran:", error);
-      toast.error("Terjadi kesalahan saat memperbarui status pembayaran.");
-    }
-  };
-
   // State untuk pencarian
   const [filterText, setFilterText] = useState("");
   const [resetPaginationToggle, setResetPaginationToggle] = useState(false);
@@ -135,13 +106,6 @@ const Payment = () => {
       name: "No",
       cell: (row, index) => <div>{index + 1}</div>,
       width: "60px",
-      center: true,
-    },
-    {
-      name: "ID Pembayaran",
-      cell: (row) => <div>{row.id}</div>,
-      sortable: true,
-      minWidth: "180px",
       center: true,
     },
     {
@@ -307,7 +271,6 @@ const Payment = () => {
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}
         payment={selectedPayment}
-        updatePaymentStatus={updatePaymentStatus}
       />
     </div>
   );

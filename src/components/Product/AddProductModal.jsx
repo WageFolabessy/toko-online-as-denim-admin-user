@@ -8,6 +8,8 @@ import { AppContext } from "../../context/AppContext";
 const AddProductModal = ({ isOpen, onClose, setProducts }) => {
   const [formData, setFormData] = useState({
     product_name: "",
+    color: "",
+    brand: "",
     category_id: "",
     original_price: "",
     sale_price: "",
@@ -144,6 +146,8 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
         // Reset form dan error
         setFormData({
           product_name: "",
+          color: "",
+          brand: "",
           category_id: "",
           original_price: "",
           sale_price: "",
@@ -188,6 +192,50 @@ const AddProductModal = ({ isOpen, onClose, setProducts }) => {
           />
           {errors.product_name &&
             errors.product_name.map((msg, idx) => (
+              <p key={idx} className="text-red-500 text-sm mt-1">
+                {msg}
+              </p>
+            ))}
+        </div>
+        {/* Warna Produk */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Warna Produk
+          </label>
+          <input
+            type="text"
+            name="color"
+            value={formData.color}
+            onChange={handleChange}
+            placeholder="Misal: Hitam, Putih, dll"
+            className={`w-full border ${
+              errors.color ? "border-red-500" : "border-gray-300"
+            } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.color &&
+            errors.color.map((msg, idx) => (
+              <p key={idx} className="text-red-500 text-sm mt-1">
+                {msg}
+              </p>
+            ))}
+        </div>
+        {/* Brand Produk */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Brand Produk
+          </label>
+          <input
+            type="text"
+            name="brand"
+            value={formData.brand}
+            onChange={handleChange}
+            placeholder="Misal: Wingman, Levi's"
+            className={`w-full border ${
+              errors.brand ? "border-red-500" : "border-gray-300"
+            } px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {errors.brand &&
+            errors.brand.map((msg, idx) => (
               <p key={idx} className="text-red-500 text-sm mt-1">
                 {msg}
               </p>

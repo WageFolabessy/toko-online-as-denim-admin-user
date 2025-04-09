@@ -8,6 +8,8 @@ import { AppContext } from "../../context/AppContext";
 const EditProductModal = ({ isOpen, onClose, product, setProducts }) => {
   const [formData, setFormData] = useState({
     product_name: "",
+    color: "",
+    brand: "",
     category_id: "",
     original_price: "",
     sale_price: "",
@@ -36,6 +38,8 @@ const EditProductModal = ({ isOpen, onClose, product, setProducts }) => {
     if (product && isOpen) {
       setFormData({
         product_name: product.product_name || "",
+        color: product.color || "",
+        brand: product.brand || "",
         category_id: product.category_id || "",
         original_price: product.original_price || "",
         sale_price: product.sale_price || "",
@@ -186,6 +190,8 @@ const EditProductModal = ({ isOpen, onClose, product, setProducts }) => {
         // Reset form
         setFormData({
           product_name: "",
+          color: "",
+          brand: "",
           category_id: "",
           original_price: "",
           sale_price: "",
@@ -235,6 +241,48 @@ const EditProductModal = ({ isOpen, onClose, product, setProducts }) => {
           {errors.product_name && (
             <p className="text-red-500 text-sm mt-1">
               {errors.product_name[0]}
+            </p>
+          )}
+        </div>
+        {/* Product Color */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Warna Produk
+          </label>
+          <input
+            type="text"
+            name="color"
+            value={formData.color}
+            onChange={handleChange}
+            placeholder="Misal: Hitam, Putih, dll"
+            className={`w-full px-4 py-2 border ${
+              errors.color ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+          />
+          {errors.color && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.color[0]}
+            </p>
+          )}
+        </div>
+        {/* Product Brand */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Brand Produk
+          </label>
+          <input
+            type="text"
+            name="brand"
+            value={formData.brand}
+            onChange={handleChange}
+            placeholder="Misal: Wingman, Levi's"
+            className={`w-full px-4 py-2 border ${
+              errors.brand ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+          />
+          {errors.brand && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.brand[0]}
             </p>
           )}
         </div>

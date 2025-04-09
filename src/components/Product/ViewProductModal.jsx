@@ -50,6 +50,24 @@ const ViewProductModal = ({ isOpen, onClose, product }) => {
               {productDetail.product_name}
             </p>
           </div>
+          {/* Warna Produk */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Warna Produk:
+            </label>
+            <p className="text-lg text-gray-900">
+              {productDetail.color ? productDetail.color : '-'}
+            </p>
+          </div>
+          {/* Brand Produk */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Brand Produk:
+            </label>
+            <p className="text-lg text-gray-900">
+              {productDetail.brand ? productDetail.brand : '-'}
+            </p>
+          </div>
           {/* Kategori */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

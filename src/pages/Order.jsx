@@ -123,8 +123,7 @@ const Order = () => {
   // Filter data pesanan berdasarkan nomor pesanan atau nama pelanggan
   const filteredOrders = orders.filter(
     (order) =>
-      order.order_number.toLowerCase().includes(filterText.toLowerCase()) ||
-      order.user_name.toLowerCase().includes(filterText.toLowerCase())
+      order.order_number.toLowerCase().includes(filterText.toLowerCase())
   );
 
   // Sub header untuk DataTable (filter pencarian)
