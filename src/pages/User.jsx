@@ -1,120 +1,109 @@
-import { useState, useEffect, useMemo, useContext } from "react";
+import { useState, useEffect, useMemo, useContext, useCallback } from "react";
 import DataTable from "react-data-table-component";
-import { FaEye, FaBan, FaCheck } from "react-icons/fa";
-import UserDetailModal from "../components/User/UserDetailModal";
-import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
+import { FaEye, FaBan, FaCheck } from "react-icons/fa";
+import PropTypes from "prop-types";
+import UserDetailModal from "../components/User/UserDetailModal";
+import FilterComponent from "../components/User/FilterComponent";
+import { AppContext } from "../context/AppContext";
+import { getSiteUsers, updateSiteUserStatus } from "../services/siteUserApi";
 
-// Komponen Filter untuk pencarian dan reset
-const FilterComponent = ({ filterText, onFilter, onClear }) => (
-  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
-    <input
-      type="text"
-      placeholder="Cari Pengguna..."
-      aria-label="Search Input"
-      value={filterText}
-      onChange={onFilter}
-      className="border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all w-full sm:w-72"
-    />
-    <button
-      onClick={onClear}
-      className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200 w-full sm:w-auto"
-    >
-      Reset Pencarian
-    </button>
-  </div>
-);
+const StatusBadge = ({ isActive }) =>
+  isActive ? (
+    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+      Aktif
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+      Non-Aktif
+    </span>
+  );
+StatusBadge.propTypes = { isActive: PropTypes.bool };
 
 const User = () => {
   const { authFetch } = useContext(AppContext);
   const [users, setUsers] = useState([]);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [filterText, setFilterText] = useState("");
   const [resetPaginationToggle, setResetPaginationToggle] = useState(false);
+  // State untuk pagination (jika diperlukan penanganan manual)
+  // const [currentPage, setCurrentPage] = useState(1);
+  // const [totalRows, setTotalRows] = useState(0);
+  // const [perPage, setPerPage] = useState(10);
+
+  const fetchUsers = useCallback(
+    async (/* page = 1, limit = 10, search = '' */) => {
+      setLoadingUser(true);
+      setFetchError(null);
+      try {
+        const responseData = await getSiteUsers(authFetch);
+        setUsers(responseData.data || []);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        const errorMessage = error.message || "Gagal memuat data pengguna.";
+        setFetchError(errorMessage);
+        toast.error(errorMessage);
+        setUsers([]);
+      } finally {
+        setLoadingUser(false);
+      }
+    },
+    [authFetch]
+  );
 
   useEffect(() => {
-    document.title = "AS Denim | Dashboard - Pengguna";
+    document.title = "Manajemen Pengguna";
     fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await authFetch("/api/admin/site_user", {
-        method: "PUT", // Sesuaikan dengan metode dan endpoint Anda
-      });
-      if (!response.ok) {
-        throw new Error("Gagal memuat data pengguna");
-      }
-      const data = await response.json();
-      setUsers(data);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast.error("Terjadi kesalahan saat memuat data pengguna.");
-    } finally {
-      setLoadingUser(false);
-    }
-  };
+  }, [fetchUsers]);
 
   const openDetailModal = (user) => {
     setSelectedUser(user);
     setIsDetailModalOpen(true);
   };
-
   const closeDetailModal = () => {
     setSelectedUser(null);
     setIsDetailModalOpen(false);
   };
 
-  const toggleUserStatus = async (userId) => {
-    // Cari pengguna di state
-    const targetUser = users.find((user) => user.id === userId);
-    if (!targetUser) return;
+  const toggleUserStatus = useCallback(
+    async (userId, currentStatus) => {
+      const confirmationText = currentStatus
+        ? "Apakah Anda yakin ingin menonaktifkan pengguna ini?"
+        : "Apakah Anda yakin ingin mengaktifkan pengguna ini?";
 
-    // Tentukan status baru (toggle)
-    const newStatus = !targetUser.is_active;
+      if (!window.confirm(confirmationText)) return;
 
-    try {
-      const response = await authFetch(
-        `/api/admin/update_siteuser_status/${userId}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({ is_active: newStatus }),
-        }
-      );
+      const targetUserIndex = users.findIndex((user) => user.id === userId);
+      if (targetUserIndex === -1) return;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Gagal mengupdate status pengguna.");
-        return;
+      try {
+        const newStatus = !currentStatus;
+        const result = await updateSiteUserStatus(authFetch, userId, newStatus);
+        toast.success(result.message || "Status akun berhasil diperbarui.");
+        fetchUsers();
+      } catch (error) {
+        console.error("Error updating user status:", error);
+        toast.error(error.message || "Gagal mengupdate status pengguna.");
       }
-
-      const data = await response.json();
-
-      // Perbarui state dengan status baru
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === userId ? { ...user, is_active: newStatus } : user
-        )
-      );
-
-      toast.success(data.message || "Status akun berhasil diperbarui.");
-    } catch (error) {
-      console.error("Error updating user status:", error);
-      toast.error("Terjadi kesalahan jaringan.");
-    }
-  };
-
-  // Filter data pengguna berdasarkan nama atau email
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(filterText.toLowerCase()) ||
-      user.email.toLowerCase().includes(filterText.toLowerCase())
+    },
+    [authFetch, fetchUsers, users /*, currentPage, perPage, filterText */]
   );
 
-  // Sub Header untuk DataTable (filter pencarian)
+  const filteredUsers = useMemo(
+    () =>
+      users.filter(
+        (user) =>
+          (user.name &&
+            user.name.toLowerCase().includes(filterText.toLowerCase())) ||
+          (user.email &&
+            user.email.toLowerCase().includes(filterText.toLowerCase()))
+      ),
+    [users, filterText]
+  );
+
   const subHeaderComponent = useMemo(() => {
     const handleClear = () => {
       if (filterText) {
@@ -122,184 +111,224 @@ const User = () => {
         setFilterText("");
       }
     };
+    const handleFilterChange = (e) => {
+      const newFilterText = e.target.value;
+      setFilterText(newFilterText);
+    };
 
     return (
       <FilterComponent
-        onFilter={(e) => setFilterText(e.target.value)}
+        onFilter={handleFilterChange}
         onClear={handleClear}
         filterText={filterText}
       />
     );
   }, [filterText, resetPaginationToggle]);
 
-  // Kolom untuk DataTable
-  const columns = [
-    {
-      name: "No",
-      cell: (row, index) => <div>{index + 1}</div>,
-      width: "60px",
-      center: true,
-    },
-    {
-      name: "Nama",
-      selector: (row) => row.name,
-      sortable: true,
-      minWidth: "150px",
-    },
-    {
-      name: "Email",
-      selector: (row) => row.email,
-      sortable: true,
-      minWidth: "200px",
-    },
-    {
-      name: "Tanggal Daftar",
-      selector: (row) => {
-        const date = new Date(row.created_at);
-        return date.toLocaleString("id-ID", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false, // Menggunakan format 24 jam
-        });
+  const columns = useMemo(
+    () => [
+      {
+        name: "No",
+        selector: (row, index) => index + 1,
+        width: "60px",
+        center: true,
+        sortable: false,
       },
-      sortable: true,
-      wrap: true,
-      minWidth: "150px",
-    },
-    {
-      name: "Status",
-      cell: (row) =>
-        row.is_active ? (
-          <span className="text-green-500 font-semibold">Aktif</span>
-        ) : (
-          <span className="text-red-500 font-semibold">Non-Aktif</span>
+      {
+        name: "Nama",
+        selector: (row) => row.name,
+        sortable: true,
+        minWidth: "150px",
+      },
+      {
+        name: "Email",
+        selector: (row) => row.email,
+        sortable: true,
+        minWidth: "200px",
+      },
+      {
+        name: "Tgl Daftar",
+        selector: (row) => row.created_at,
+        cell: (row) =>
+          new Date(row.created_at).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+        sortable: true,
+        minWidth: "130px",
+      },
+      {
+        name: "Status",
+        selector: (row) => row.is_active,
+        cell: (row) => <StatusBadge isActive={row.is_active} />,
+        sortable: true,
+        center: true,
+        minWidth: "100px",
+      },
+      {
+        name: "Aksi",
+        cell: (row) => (
+          <div className="flex items-center justify-center gap-1 md:gap-2">
+            <button
+              onClick={() => openDetailModal(row)}
+              className="rounded p-1.5 text-green-600 transition-colors hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+              title="Lihat Detail"
+              aria-label={`Lihat detail ${row.name}`}
+            >
+              <FaEye className="h-4 w-4 md:h-5 md:w-5" />
+            </button>
+            <button
+              onClick={() => toggleUserStatus(row.id, row.is_active)}
+              className={`rounded p-1.5 transition-colors ${
+                row.is_active
+                  ? "text-red-500 hover:bg-red-100 focus:ring-red-500"
+                  : "text-blue-500 hover:bg-blue-100 focus:ring-blue-500"
+              } focus:outline-none focus:ring-2 `}
+              title={
+                row.is_active ? "Nonaktifkan Pengguna" : "Aktifkan Pengguna"
+              }
+              aria-label={
+                row.is_active
+                  ? `Nonaktifkan ${row.name}`
+                  : `Aktifkan ${row.name}`
+              }
+            >
+              {row.is_active ? (
+                <FaBan className="h-4 w-4 md:h-5 md:w-5" />
+              ) : (
+                <FaCheck className="h-4 w-4 md:h-5 md:w-5" />
+              )}
+            </button>
+          </div>
         ),
-      sortable: true,
-      minWidth: "120px",
-    },
-    {
-      name: "Aksi",
-      cell: (row) => (
-        <div className="flex justify-center items-center gap-3">
-          <button
-            onClick={() => openDetailModal(row)}
-            className="text-lg p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-            title="Lihat Detail"
-          >
-            <FaEye />
-          </button>
-          <button
-            onClick={() => toggleUserStatus(row.id)}
-            className={`mx-1 ${
-              row.is_active
-                ? "text-lg text-red-500 hover:text-red-600"
-                : "text-lg text-blue-500 hover:text-blue-600"
-            }`}
-            title={row.is_active ? "Nonaktifkan Pengguna" : "Aktifkan Pengguna"}
-          >
-            {row.is_active ? <FaBan /> : <FaCheck />}
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
-      allowOverflow: true,
-      button: true,
-      center: true,
-      minWidth: "100px",
-    },
-  ];
+        ignoreRowClick: true,
+        allowOverflow: true,
+        button: true,
+        center: true,
+        minWidth: "100px",
+      },
+    ],
+    [toggleUserStatus]
+  );
 
-  const customStyles = {
-    table: {
-      style: {
-        backgroundColor: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: "0.5rem",
-        overflow: "hidden",
+  const customStyles = useMemo(
+    () => ({
+      table: {
+        style: {
+          borderRadius: "0.5rem",
+          overflow: "hidden",
+          border: "1px solid #e5e7eb",
+        },
       },
-    },
-    header: {
-      style: {
-        fontSize: "1.25rem",
-        fontWeight: "bold",
-        padding: "1rem",
-        backgroundColor: "#f8fafc",
-        borderBottom: "2px solid #e5e7eb",
+      header: {
+        style: {
+          fontSize: "1.125rem",
+          fontWeight: "600",
+          padding: "1rem",
+          backgroundColor: "#f9fafb",
+          borderBottom: "1px solid #e5e7eb",
+        },
       },
-    },
-    headRow: {
-      style: {
-        backgroundColor: "#f3f4f6",
-        borderBottomWidth: "2px",
+      subHeader: {
+        style: { padding: "1rem 1rem 0.5rem 1rem", backgroundColor: "#ffffff" },
       },
-    },
-    headCells: {
-      style: {
-        fontSize: "0.875rem",
-        fontWeight: "600",
-        padding: "0.75rem 1rem",
-        color: "#374151",
+      headRow: {
+        style: {
+          backgroundColor: "#f3f4f6",
+          borderBottomWidth: "1px",
+          minHeight: "40px",
+        },
       },
-    },
-    cells: {
-      style: {
-        fontSize: "0.875rem",
-        padding: "0.75rem 1rem",
-        color: "#4b5563",
+      headCells: {
+        style: {
+          fontSize: "0.75rem",
+          fontWeight: "600",
+          padding: "0.5rem 1rem",
+          color: "#4b5563",
+          textTransform: "uppercase",
+          "&:last-of-type": { justifyContent: "center" },
+        },
       },
-    },
-    pagination: {
-      style: {
-        borderTop: "1px solid #e5e7eb",
-        padding: "1rem",
+      cells: {
+        style: {
+          fontSize: "0.875rem",
+          padding: "0.75rem 1rem",
+          color: "#1f2937",
+          borderBottom: "1px solid #f3f4f6",
+          minHeight: "50px",
+        },
       },
-    },
-    responsiveWrapper: {
-      style: {
-        borderRadius: "0.5rem",
+      pagination: {
+        style: {
+          borderTop: "1px solid #e5e7eb",
+          padding: "0.5rem 1rem",
+          fontSize: "0.875rem",
+        },
       },
-    },
-  };
+      noData: {
+        style: { padding: "2rem", textAlign: "center", color: "#6b7280" },
+      },
+    }),
+    []
+  );
+
+  const paginationOptions = useMemo(
+    () => ({
+      rowsPerPageText: "Baris per halaman:",
+      rangeSeparatorText: "dari",
+      selectAllRowsItem: true,
+      selectAllRowsItemText: "Semua",
+    }),
+    []
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Pengguna</h1>
-      <div className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto">
+    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <h1 className="mb-6 text-2xl font-bold text-gray-900 md:text-3xl">
+        Manajemen Pengguna Situs
+      </h1>
+
+      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
         {loadingUser ? (
-          <div className="p-4 text-center text-gray-500">
-            Memuat Pengguna...
+          <div className="p-6 text-center text-gray-500">
+            Memuat data pengguna...
+          </div>
+        ) : fetchError ? (
+          <div className="p-6 text-center text-red-500">
+            Error: {fetchError}. Coba refresh halaman.
           </div>
         ) : (
           <DataTable
             columns={columns}
-            data={filteredUsers}
+            data={filteredUsers} // Gunakan data yang sudah difilter di client-side
             pagination
             paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50, 100]}
-            paginationComponentOptions={{
-              rowsPerPageText: "Baris per halaman:",
-              rangeSeparatorText: "dari",
-            }}
+            paginationRowsPerPageOptions={[10, 15, 20, 50]}
+            paginationComponentOptions={paginationOptions}
+            paginationResetDefaultPage={resetPaginationToggle}
+            // Progress & Pagination server-side (jika diperlukan)
+            // progressPending={loadingUser}
+            // paginationServer
+            // paginationTotalRows={totalRows}
+            // onChangeRowsPerPage={handlePerRowsChange}
+            // onChangePage={handlePageChange}
+            subHeader
+            subHeaderComponent={subHeaderComponent}
+            persistTableHead
             responsive
             highlightOnHover
             striped
             customStyles={customStyles}
-            subHeader
-            subHeaderComponent={subHeaderComponent}
-            paginationResetDefaultPage={resetPaginationToggle}
             noDataComponent={
-              <div className="p-4 text-center text-gray-500">
-                Tidak ada data pengguna.
+              <div className="py-10 text-center text-gray-500">
+                Tidak ada data pengguna ditemukan.
               </div>
             }
           />
         )}
       </div>
 
-      {/* Modal Detail Pengguna */}
       <UserDetailModal
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}
