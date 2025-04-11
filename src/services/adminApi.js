@@ -1,4 +1,4 @@
-import { handleApiResponse } from "../utils/apiUtils"; // Import handler
+import { handleApiResponse } from "../utils/apiUtils";
 
 const API_BASE_URL = "/api/admin";
 
@@ -28,6 +28,22 @@ export const createAdmin = async (authFetch, adminData) => {
   }
 };
 
+export const getOwnAdminProfile = async (authFetch) => {
+  try {
+    const response = await authFetch(`${API_BASE_URL}/get_admin`, {
+      method: "GET",
+    });
+    const responseData = await handleApiResponse(response);
+    return responseData?.data || responseData;
+  } catch (error) {
+    console.error("Get own profile API call failed:", error);
+    if (!(error instanceof Error && "status" in error)) {
+      throw new Error("Gagal mengambil data profil.");
+    }
+    throw error;
+  }
+};
+
 export const updateOwnAdminProfile = async (authFetch, profileData) => {
   try {
     const response = await authFetch(`${API_BASE_URL}/admin`, {
@@ -35,7 +51,6 @@ export const updateOwnAdminProfile = async (authFetch, profileData) => {
       body: JSON.stringify(profileData),
     });
     const responseData = await handleApiResponse(response);
-    
     if (responseData.user && responseData.user.data) {
       responseData.user = responseData.user.data;
     }
@@ -62,9 +77,7 @@ export const getSelectedAdmin = async (authFetch, adminId) => {
   try {
     const response = await authFetch(
       `${API_BASE_URL}/show_selected_admin/${adminId}`,
-      {
-        method: "GET",
-      }
+      { method: "GET" }
     );
     const responseData = await handleApiResponse(response);
     return responseData?.data || responseData;
