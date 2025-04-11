@@ -1,41 +1,47 @@
-import { useState, useEffect, useContext } from "react";
-import Modal from "../Modal"; // Adjust the import path as needed
+import { useState, useEffect, useContext, useCallback } from "react";
+import PropTypes from "prop-types";
+import { toast } from "react-toastify";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { toast } from "react-toastify";
+import { FaTimes } from "react-icons/fa";
+import Modal from "../Modal";
 import { AppContext } from "../../context/AppContext";
+import { updateProduct } from "../../services/productApi";
+import { getCategories } from "../../services/categoryApi";
 
-const EditProductModal = ({ isOpen, onClose, product, setProducts }) => {
-  const [formData, setFormData] = useState({
-    product_name: "",
-    color: "",
-    brand: "",
-    category_id: "",
-    original_price: "",
-    sale_price: "",
-    size: "",
-    stock: "",
-    weight: "",
-    description: "",
-  });
-
-  const [categories, setCategories] = useState([]);
-  const [imageFiles, setImageFiles] = useState([]); // New images to upload
-  const [imagePreviews, setImagePreviews] = useState([]); // Previews of new images
-  const [existingImages, setExistingImages] = useState([]); // Existing images from the product
-  const [imagesToDelete, setImagesToDelete] = useState([]); // IDs of images to delete
-  const [errors, setErrors] = useState({});
+const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const { authFetch } = useContext(AppContext);
 
-  // Fetch categories and initialize form data
-  useEffect(() => {
-    if (isOpen) {
-      fetchCategories();
+  const [formData, setFormData] = useState({});
+  const [categories, setCategories] = useState([]);
+  const [newImageFiles, setNewImageFiles] = useState([]);
+  const [newImagePreviews, setNewImagePreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [imagesToDelete, setImagesToDelete] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  const fetchCategoriesCallback = useCallback(async () => {
+    if (!isOpen || categories.length > 0) return;
+    setLoadingCategories(true);
+    try {
+      const categoriesData = await getCategories(authFetch);
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      toast.error(error.message || "Gagal memuat daftar kategori.");
+    } finally {
+      setLoadingCategories(false);
     }
-  }, [isOpen]);
+  }, [isOpen, authFetch, categories.length]);
 
   useEffect(() => {
-    if (product && isOpen) {
+    fetchCategoriesCallback();
+  }, [fetchCategoriesCallback]);
+
+  useEffect(() => {
+    if (isOpen && product) {
       setFormData({
         product_name: product.product_name || "",
         color: product.color || "",
@@ -44,486 +50,664 @@ const EditProductModal = ({ isOpen, onClose, product, setProducts }) => {
         original_price: product.original_price || "",
         sale_price: product.sale_price || "",
         size: product.size || "",
-        stock: product.stock || "",
+        stock: product.stock !== null ? product.stock : "",
         weight: product.weight || "",
         description: product.description || "",
       });
-
-      // Set existing images
-      setExistingImages(product.images || []);
-
-      // Clear new images and errors
-      setImageFiles([]);
-      setImagePreviews([]);
+      setExistingImages(Array.isArray(product.images) ? product.images : []);
+      setNewImageFiles([]);
+      setNewImagePreviews([]);
       setImagesToDelete([]);
       setErrors({});
+      setLoading(false);
+    }
+    if (!isOpen) {
+      setFormData({});
+      setExistingImages([]);
+      setNewImageFiles([]);
+      setNewImagePreviews([]);
+      setImagesToDelete([]);
+      setErrors({});
+      setLoading(false);
     }
   }, [product, isOpen]);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await authFetch("/api/admin/category");
-      const data = await response.json();
-      setCategories(data);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error("Gagal memuat kategori.");
-    }
-  };
+  useEffect(() => {
+    const previews = [...newImagePreviews];
+    return () => {
+      previews.forEach((preview) => {
+        if (preview && preview.startsWith("blob:")) {
+          URL.revokeObjectURL(preview);
+        }
+      });
+    };
+  }, [newImagePreviews]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Clear specific field error if any
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
     if (errors[name]) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        [name]: null,
-      }));
+      setErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
     }
-
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    if (errors.message) {
+      setErrors((prevErrors) => ({ ...prevErrors, message: undefined }));
+    }
   };
 
   const handleDescriptionChange = (value) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      description: value,
-    }));
-  };
-
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImageFiles(files);
-
-    // Generate previews
-    const previews = files.map((file) => URL.createObjectURL(file));
-    setImagePreviews(previews);
-
-    // Clear image errors
-    if (errors.images) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        images: null,
-      }));
+    const descriptionValue = value === "<p><br></p>" ? "" : value;
+    setFormData((prevData) => ({ ...prevData, description: descriptionValue }));
+    if (errors.description) {
+      setErrors((prevErrors) => ({ ...prevErrors, description: undefined }));
+    }
+    if (errors.message) {
+      setErrors((prevErrors) => ({ ...prevErrors, message: undefined }));
     }
   };
 
-  // Clean up object URLs to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach((preview) => {
+  const handleNewImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const validImageFiles = files.filter((file) =>
+      file.type.startsWith("image/")
+    );
+    const currentPreviews = [...newImagePreviews];
+
+    currentPreviews.forEach((preview) => {
+      if (preview && preview.startsWith("blob:")) {
         URL.revokeObjectURL(preview);
+      }
+    });
+
+    if (validImageFiles.length !== files.length) {
+      toast.warn("Beberapa file yang dipilih bukan gambar dan diabaikan.");
+    }
+
+    setNewImageFiles(validImageFiles);
+    setNewImagePreviews(
+      validImageFiles.map((file) => URL.createObjectURL(file))
+    );
+
+    const imageErrorKeys = Object.keys(errors).filter((key) =>
+      key.startsWith("images")
+    );
+    if (imageErrorKeys.length > 0 || errors.message) {
+      setErrors((prevErrors) => {
+        const newErrors = { ...prevErrors };
+        imageErrorKeys.forEach((key) => delete newErrors[key]);
+        delete newErrors.message; // Hapus juga error umum
+        return newErrors;
       });
-    };
-  }, [imagePreviews]);
+    }
+  };
 
-  // Handle deleting existing images
   const handleDeleteExistingImage = (imageId) => {
-    // Add image ID to imagesToDelete array
     setImagesToDelete((prev) => [...prev, imageId]);
-
-    // Remove image from existingImages state
     setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+    if (errors.message) {
+      setErrors((prevErrors) => ({ ...prevErrors, message: undefined }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!product?.id) return;
 
-    // Prepare form data
+    setErrors({});
+    setLoading(true);
+
     const data = new FormData();
-    for (const key in formData) {
-      data.append(key, formData[key]);
-    }
+    Object.keys(formData).forEach((key) => {
+      const value =
+        key === "sale_price" && formData[key] === "" ? "" : formData[key];
+      if (value !== null && value !== undefined) {
+        data.append(key, value);
+      }
+    });
 
-    // Append new images if any
-    imageFiles.forEach((file) => {
+    newImageFiles.forEach((file) => {
       data.append("images[]", file);
     });
 
-    // Append IDs of images to delete
     imagesToDelete.forEach((imageId) => {
       data.append("imagesToDelete[]", imageId);
     });
 
-    // Include _method to simulate PUT request
-    data.append("_method", "PUT");
-
     try {
-      const response = await authFetch(
-        `http://127.0.0.1:8000/api/admin/product/${product.id}`,
-        {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-          },
-          body: data,
-        }
-      );
+      const result = await updateProduct(authFetch, product.id, data);
 
-      const result = await response.json();
-
-      if (response.ok) {
-        // Cari data kategori yang sesuai berdasarkan category_id dari produk hasil update.
-        const updatedCategory = categories.find(
-          (cat) => cat.id === parseInt(result.product.category_id)
-        );
-
-        // Gabungkan kategori ke dalam data produk yang diperbarui.
-        const updatedProduct = {
-          ...result.product,
-          category: updatedCategory || product.category,
-        };
-
-        // Update state produk dengan produk yang sudah diperbarui.
-        setProducts((prevProducts) =>
-          prevProducts.map((item) =>
-            item.id === product.id ? updatedProduct : item
-          )
-        );
-
-        toast.success(result.message || "Produk berhasil diperbarui.");
-        onClose();
-        // Reset form
-        setFormData({
-          product_name: "",
-          color: "",
-          brand: "",
-          category_id: "",
-          original_price: "",
-          sale_price: "",
-          size: "",
-          stock: "",
-          weight: "",
-          description: "",
-        });
-        setImageFiles([]);
-        setImagePreviews([]);
-        setExistingImages([]);
-        setImagesToDelete([]);
-        setErrors({});
-      } else if (response.status === 422) {
-        // Handle validation errors
-        setErrors(result.errors || {});
-      } else {
-        toast.error(result.message || "Terjadi kesalahan.");
-      }
+      toast.success(result.message || "Produk berhasil diperbarui.");
+      onSuccess();
+      onClose();
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Gagal menghubungi server.");
+      console.error("Error updating product:", error);
+      const errorMessage = error.message || "Terjadi kesalahan.";
+
+      if (error.status === 422 && error.errors) {
+        setErrors(
+          Object.keys(error.errors).reduce((acc, key) => {
+            const frontendKey = key.startsWith("images.")
+              ? "images"
+              : key.startsWith("imagesToDelete.")
+              ? "imagesToDelete"
+              : key;
+            acc[frontendKey] = error.errors[key][0];
+            return acc;
+          }, {})
+        );
+        toast.error("Data yang dimasukkan tidak valid.");
+      } else {
+        setErrors({ message: errorMessage });
+        const backendMessage = error?.data?.message;
+        toast.error(
+          `Gagal memperbarui produk: ${backendMessage || errorMessage}`
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!product) return null;
+  if (!isOpen || !product) {
+    return null;
+  }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Produk">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Product Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nama Produk
-          </label>
-          <input
-            type="text"
-            name="product_name"
-            value={formData.product_name}
-            onChange={handleChange}
-            required
-            placeholder="Misal: Blue Jeans"
-            className={`w-full px-4 py-2 border ${
-              errors.product_name ? "border-red-500" : "border-gray-300"
-            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
-          />
-          {errors.product_name && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.product_name[0]}
-            </p>
-          )}
-        </div>
-        {/* Product Color */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Warna Produk
-          </label>
-          <input
-            type="text"
-            name="color"
-            value={formData.color}
-            onChange={handleChange}
-            placeholder="Misal: Hitam, Putih, dll"
-            className={`w-full px-4 py-2 border ${
-              errors.color ? "border-red-500" : "border-gray-300"
-            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
-          />
-          {errors.color && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.color[0]}
-            </p>
-          )}
-        </div>
-        {/* Product Brand */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Brand Produk
-          </label>
-          <input
-            type="text"
-            name="brand"
-            value={formData.brand}
-            onChange={handleChange}
-            placeholder="Misal: Wingman, Levi's"
-            className={`w-full px-4 py-2 border ${
-              errors.brand ? "border-red-500" : "border-gray-300"
-            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
-          />
-          {errors.brand && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.brand[0]}
-            </p>
-          )}
-        </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Edit Produk: ${product.product_name}`}
+    >
+      <form onSubmit={handleSubmit} noValidate>
+        {errors.message && (
+          <div className="mb-4 rounded bg-red-100 p-3 text-center text-sm text-red-700">
+            {errors.message}
+          </div>
+        )}
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-6">
+          <div className="sm:col-span-3">
+            <label
+              htmlFor={`edit-product-name-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
+              Nama Produk
+            </label>
+            <input
+              type="text"
+              id={`edit-product-name-${product.id}`}
+              name="product_name"
+              value={formData.product_name}
+              onChange={handleChange}
+              required
+              aria-invalid={!!errors.product_name}
+              aria-describedby={
+                errors.product_name
+                  ? `product-name-error-${product.id}`
+                  : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.product_name
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
+            />
+            {errors.product_name && (
+              <p
+                id={`product-name-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.product_name}
+              </p>
+            )}
+          </div>
 
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Kategori
-          </label>
-          <select
-            name="category_id"
-            value={formData.category_id}
-            onChange={handleChange}
-            required
-            className={`w-full px-4 py-2 border ${
-              errors.category_id ? "border-red-500" : "border-gray-300"
-            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
-          >
-            <option value="">Pilih Kategori</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.category_name}
+          <div className="sm:col-span-3">
+            <label
+              htmlFor={`edit-product-category-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
+              Kategori
+            </label>
+            <select
+              id={`edit-product-category-${product.id}`}
+              name="category_id"
+              value={formData.category_id}
+              onChange={handleChange}
+              required
+              disabled={loadingCategories}
+              aria-invalid={!!errors.category_id}
+              aria-describedby={
+                errors.category_id
+                  ? `category-id-error-${product.id}`
+                  : undefined
+              }
+              className={`block w-full rounded-md border-0 bg-white px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.category_id
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
+            >
+              <option value="" disabled>
+                {loadingCategories ? "Memuat..." : "-- Pilih Kategori --"}
               </option>
-            ))}
-          </select>
-          {errors.category_id && (
-            <p className="text-red-500 text-sm mt-1">{errors.category_id[0]}</p>
-          )}
-        </div>
+              {categories.map((cat) => (
+                <option value={cat.id} key={cat.id}>
+                  {cat.category_name}
+                </option>
+              ))}
+            </select>
+            {errors.category_id && (
+              <p
+                id={`category-id-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.category_id}
+              </p>
+            )}
+          </div>
 
-        {/* Prices */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Original Price */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Harga Asli
+          <div className="sm:col-span-3">
+            <label
+              htmlFor={`edit-product-brand-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
+              Brand (Opsional)
+            </label>
+            <input
+              type="text"
+              id={`edit-product-brand-${product.id}`}
+              name="brand"
+              value={formData.brand}
+              onChange={handleChange}
+              placeholder="Misal: AS Denim"
+              aria-invalid={!!errors.brand}
+              aria-describedby={
+                errors.brand ? `brand-error-${product.id}` : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.brand
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
+            />
+            {errors.brand && (
+              <p
+                id={`brand-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.brand}
+              </p>
+            )}
+          </div>
+
+          <div className="sm:col-span-3">
+            <label
+              htmlFor={`edit-product-color-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
+              Warna (Opsional)
+            </label>
+            <input
+              type="text"
+              id={`edit-product-color-${product.id}`}
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+              placeholder="Misal: Biru Tua, Hitam"
+              aria-invalid={!!errors.color}
+              aria-describedby={
+                errors.color ? `color-error-${product.id}` : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.color
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
+            />
+            {errors.color && (
+              <p
+                id={`color-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.color}
+              </p>
+            )}
+          </div>
+
+          <div className="sm:col-span-3">
+            <label
+              htmlFor={`edit-product-original-price-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
+              Harga Asli (Rp)
             </label>
             <input
               type="number"
+              id={`edit-product-original-price-${product.id}`}
               name="original_price"
               value={formData.original_price}
               onChange={handleChange}
               required
-              placeholder="Misal: 500000"
-              className={`w-full px-4 py-2 border ${
-                errors.original_price ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+              min="1"
+              aria-invalid={!!errors.original_price}
+              aria-describedby={
+                errors.original_price
+                  ? `original-price-error-${product.id}`
+                  : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.original_price
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
             />
             {errors.original_price && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.original_price[0]}
+              <p
+                id={`original-price-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.original_price}
               </p>
             )}
           </div>
 
-          {/* Sale Price */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Harga Diskon
+          <div className="sm:col-span-3">
+            <label
+              htmlFor={`edit-product-sale-price-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
+              Harga Diskon (Rp) (Opsional)
             </label>
             <input
               type="number"
+              id={`edit-product-sale-price-${product.id}`}
               name="sale_price"
               value={formData.sale_price}
               onChange={handleChange}
-              placeholder="Misal: 450000"
-              className={`w-full px-4 py-2 border ${
-                errors.sale_price ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+              min="1"
+              placeholder="Kosongkan jika tidak diskon"
+              aria-invalid={!!errors.sale_price}
+              aria-describedby={
+                errors.sale_price ? `sale-price-error-${product.id}` : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.sale_price
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
             />
             {errors.sale_price && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.sale_price[0]}
+              <p
+                id={`sale-price-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.sale_price}
               </p>
             )}
           </div>
-        </div>
 
-        {/* Size, Stock, Weight */}
-        <div className="grid grid-cols-3 gap-4">
-          {/* Size */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="sm:col-span-2">
+            <label
+              htmlFor={`edit-product-size-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
               Ukuran
             </label>
             <input
               type="text"
+              id={`edit-product-size-${product.id}`}
               name="size"
               value={formData.size}
               onChange={handleChange}
               required
-              placeholder="Misal: M"
-              className={`w-full px-4 py-2 border ${
-                errors.size ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+              placeholder="Misal: M, L / 28, 29"
+              aria-invalid={!!errors.size}
+              aria-describedby={
+                errors.size ? `size-error-${product.id}` : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.size
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
             />
             {errors.size && (
-              <p className="text-red-500 text-sm mt-1">{errors.size[0]}</p>
+              <p
+                id={`size-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.size}
+              </p>
             )}
           </div>
 
-          {/* Stock */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="sm:col-span-2">
+            <label
+              htmlFor={`edit-product-stock-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
               Stok
             </label>
             <input
               type="number"
+              id={`edit-product-stock-${product.id}`}
               name="stock"
               value={formData.stock}
               onChange={handleChange}
               required
+              min="0"
               placeholder="Misal: 100"
-              className={`w-full px-4 py-2 border ${
-                errors.stock ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+              aria-invalid={!!errors.stock}
+              aria-describedby={
+                errors.stock ? `stock-error-${product.id}` : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.stock
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
             />
             {errors.stock && (
-              <p className="text-red-500 text-sm mt-1">{errors.stock[0]}</p>
+              <p
+                id={`stock-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.stock}
+              </p>
             )}
           </div>
 
-          {/* Weight */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="sm:col-span-2">
+            <label
+              htmlFor={`edit-product-weight-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
               Berat (gram)
             </label>
             <input
               type="number"
+              id={`edit-product-weight-${product.id}`}
               name="weight"
               value={formData.weight}
               onChange={handleChange}
               required
+              min="1"
               placeholder="Misal: 500"
-              className={`w-full px-4 py-2 border ${
-                errors.weight ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+              aria-invalid={!!errors.weight}
+              aria-describedby={
+                errors.weight ? `weight-error-${product.id}` : undefined
+              }
+              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+                errors.weight
+                  ? "ring-red-500 focus:ring-red-500"
+                  : "ring-gray-300 focus:ring-indigo-600"
+              }`}
             />
             {errors.weight && (
-              <p className="text-red-500 text-sm mt-1">{errors.weight[0]}</p>
+              <p
+                id={`weight-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.weight}
+              </p>
+            )}
+          </div>
+
+          <div className="sm:col-span-full">
+            <label className="mb-1.5 block text-sm font-medium leading-6 text-gray-900">
+              Deskripsi (Opsional)
+            </label>
+            <ReactQuill
+              theme="snow"
+              value={formData.description}
+              onChange={handleDescriptionChange}
+              className="h-48 rounded-md bg-white mb-12 md:mb-6 [&_.ql-container]:rounded-b-md [&_.ql-toolbar]:rounded-t-md [&_.ql-toolbar]:border-gray-300 [&_.ql-container]:border-gray-300"
+              modules={{
+                toolbar: [
+                  [{ header: [1, 2, 3, false] }],
+                  ["bold", "italic", "underline", "strike", "blockquote"],
+                  [
+                    { list: "ordered" },
+                    { list: "bullet" },
+                    { indent: "-1" },
+                    { indent: "+1" },
+                  ],
+                  ["link"],
+                  ["clean"],
+                ],
+              }}
+            />
+            {errors.description && (
+              <p className="mt-1 text-xs text-red-600">{errors.description}</p>
+            )}
+          </div>
+
+          <div className="sm:col-span-full">
+            <label className="mb-1.5 block text-sm font-medium leading-6 text-gray-900">
+              Gambar Produk Saat Ini
+            </label>
+            {existingImages.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-3 rounded-lg border border-dashed border-gray-900/25 p-4">
+                {existingImages.map((img) => (
+                  <div key={img.id} className="relative flex-shrink-0">
+                    <img
+                      src={img.image_url}
+                      alt={`Gambar ${img.id}`}
+                      loading="lazy"
+                      className="h-24 w-24 rounded-md border object-cover shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteExistingImage(img.id)}
+                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-red-600 bg-red-500 text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                      title="Hapus Gambar Ini"
+                      aria-label="Hapus Gambar Ini"
+                    >
+                      <FaTimes className="h-3 w-3" />
+                    </button>
+                    {img.is_primary && (
+                      <span className="absolute bottom-1 right-1 rounded-sm bg-indigo-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                        Utama
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-sm text-gray-500">
+                Tidak ada gambar saat ini.
+              </p>
+            )}
+            {errors.imagesToDelete && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.imagesToDelete}
+              </p>
+            )}
+          </div>
+
+          <div className="sm:col-span-full">
+            <label
+              htmlFor={`edit-product-images-${product.id}`}
+              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+            >
+              Tambah Gambar Baru (Opsional)
+            </label>
+            <input
+              type="file"
+              id={`edit-product-images-${product.id}`}
+              multiple
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleNewImageChange}
+              aria-invalid={!!errors.images}
+              aria-describedby={
+                errors.images ? `images-error-${product.id}` : undefined
+              }
+              className={`block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-600 hover:file:bg-indigo-100 focus:outline-none ${
+                errors.images ? "ring-1 ring-red-500 rounded-md" : ""
+              }`}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Format: JPG, PNG, WEBP. Maks: 2MB per file.
+            </p>
+            {errors.images && (
+              <p
+                id={`images-error-${product.id}`}
+                className="mt-1 text-xs text-red-600"
+              >
+                {errors.images}
+              </p>
+            )}
+
+            {newImagePreviews.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-1 text-xs font-medium text-gray-600">
+                  Pratinjau Gambar Baru:
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {newImagePreviews.map((src, index) => (
+                    <img
+                      key={index}
+                      src={src}
+                      alt={`Pratinjau Baru ${index + 1}`}
+                      className="h-24 w-24 rounded-md border object-cover shadow-sm"
+                    />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Deskripsi
-          </label>
-          <ReactQuill
-            theme="snow"
-            value={formData.description}
-            onChange={handleDescriptionChange}
-            className="bg-white"
-          />
-          {errors.description && (
-            <p className="text-red-500 text-sm mt-1">{errors.description[0]}</p>
-          )}
-        </div>
-
-        {/* Existing Images */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Gambar Produk Saat Ini
-          </label>
-          {existingImages.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-4">
-              {existingImages.map((img) => (
-                <div key={img.id} className="relative">
-                  <img
-                    src={`/storage/${img.image}`}
-                    alt={`Gambar ${img.id}`}
-                    className="w-20 h-20 object-cover rounded-md shadow-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteExistingImage(img.id)}
-                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500">Tidak ada gambar yang tersedia.</p>
-          )}
-        </div>
-
-        {/* New Images */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tambah Gambar Baru
-          </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full"
-          />
-          {errors["images.0"] && (
-            <p className="text-red-500 text-sm mt-1">{errors["images.0"][0]}</p>
-          )}
-          {imagePreviews.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-4">
-              {imagePreviews.map((src, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={src}
-                    alt={`Pratinjau ${index}`}
-                    className="w-20 h-20 object-cover rounded-md shadow-md"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Submit Buttons */}
-        <div className="flex justify-end space-x-3 pt-6">
+        <div className="mt-8 flex justify-end gap-3 border-t border-gray-200 pt-5">
           <button
             type="button"
-            onClick={() => {
-              onClose();
-              setErrors({});
-            }}
-            className="px-5 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition duration-200"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             Batal
           </button>
           <button
             type="submit"
-            className="px-5 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition duration-200"
+            disabled={loading || loadingCategories}
+            className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              loading || loadingCategories
+                ? "cursor-not-allowed bg-indigo-400"
+                : "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+            }`}
           >
-            Perbarui
+            {loading ? "Memperbarui..." : "Perbarui Produk"}
           </button>
         </div>
       </form>
     </Modal>
   );
+};
+
+EditProductModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  product: PropTypes.object,
+  onSuccess: PropTypes.func.isRequired,
 };
 
 export default EditProductModal;
