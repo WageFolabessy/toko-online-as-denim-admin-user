@@ -1,65 +1,46 @@
-import { useState, useEffect, useMemo, useContext } from "react";
+import { useState, useEffect, useMemo, useContext, useCallback } from "react";
 import DataTable from "react-data-table-component";
+import { toast } from "react-toastify";
 import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import AddAdminModal from "../components/Admin/AddAdminModal";
 import EditAdminModal from "../components/Admin/EditAdminModal";
 import ViewAdminModal from "../components/Admin/ViewAdminModal";
 import DeleteAdminModal from "../components/Admin/DeleteAdminModal";
+import FilterComponent from "../components/Admin/FilterComponent";
 import { AppContext } from "../context/AppContext";
-
-const FilterComponent = ({ filterText, onFilter, onClear }) => (
-  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
-    <input
-      type="text"
-      placeholder="Cari Admin..."
-      aria-label="Search Input"
-      value={filterText}
-      onChange={onFilter}
-      className="border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all w-full sm:w-72"
-    />
-    <button
-      onClick={onClear}
-      className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200 w-full sm:w-auto"
-    >
-      Reset Pencarian
-    </button>
-  </div>
-);
+import { getAdmins } from "../services/adminApi";
 
 const Admin = () => {
-  // Data admin, awalnya kosong (akan diisi dari API)
   const [admins, setAdmins] = useState([]);
-  const { authFetch } = useContext(AppContext);
-
-  // State modal dan data terpilih
+  const [loadingAdmins, setLoadingAdmins] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
-  const [loadingAdmins, setLoadingAdmins] = useState(true);
-
-  // State untuk filter pencarian
   const [filterText, setFilterText] = useState("");
   const [resetPaginationToggle, setResetPaginationToggle] = useState(false);
+  const { authFetch } = useContext(AppContext);
+
+  const fetchAdmins = useCallback(async () => {
+    setLoadingAdmins(true);
+    try {
+      const adminsData = await getAdmins(authFetch);
+      setAdmins(adminsData);
+    } catch (error) {
+      console.error("Error fetching admins:", error);
+      toast.error(error.message || "Gagal memuat data admin.");
+      setAdmins([]);
+    } finally {
+      setLoadingAdmins(false);
+    }
+  }, [authFetch]);
 
   useEffect(() => {
-    document.title = "AS Denim | Dashboard - Admin";
+    document.title = "Manajemen Admin";
+    fetchAdmins();
+  }, [fetchAdmins]);
 
-    // Panggil API untuk mengambil data admin
-    authFetch("/api/admin/admin")
-      .then((response) => response.json())
-      .then((admins) => {
-        setAdmins(admins);
-        setLoadingAdmins(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching admin:", error);
-        setLoadingAdmins(false);
-      });
-  });
-
-  // Handler untuk membuka/menutup modal
   const openAddModal = () => setIsAddModalOpen(true);
   const closeAddModal = () => setIsAddModalOpen(false);
 
@@ -90,14 +71,18 @@ const Admin = () => {
     setIsDeleteModalOpen(false);
   };
 
-  // Filter data admin berdasarkan nama atau email
+  const handleSuccess = () => {
+    fetchAdmins();
+  };
+
   const filteredAdmins = admins.filter(
     (admin) =>
-      admin.name.toLowerCase().includes(filterText.toLowerCase()) ||
-      admin.email.toLowerCase().includes(filterText.toLowerCase())
+      (admin.name &&
+        admin.name.toLowerCase().includes(filterText.toLowerCase())) ||
+      (admin.email &&
+        admin.email.toLowerCase().includes(filterText.toLowerCase()))
   );
 
-  // Sub header untuk DataTable (filter pencarian)
   const subHeaderComponent = useMemo(() => {
     const handleClear = () => {
       if (filterText) {
@@ -105,7 +90,6 @@ const Admin = () => {
         setFilterText("");
       }
     };
-
     return (
       <FilterComponent
         onFilter={(e) => setFilterText(e.target.value)}
@@ -115,161 +99,175 @@ const Admin = () => {
     );
   }, [filterText, resetPaginationToggle]);
 
-  // Kolom untuk DataTable
-  const columns = [
-    {
-      name: "No",
-      cell: (row, index) => <div>{index + 1}</div>,
-      width: "60px",
-      center: true,
-    },
-    {
-      name: "Nama",
-      selector: (row) => row.name,
-      sortable: true,
-      minWidth: "150px",
-    },
-    {
-      name: "Email",
-      selector: (row) => row.email,
-      sortable: true,
-      minWidth: "200px",
-    },
-    {
-      name: "Tanggal Dibuat",
-      selector: (row) => {
-        const date = new Date(row.created_at);
-        return date.toLocaleString("id-ID", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        });
+  const columns = useMemo(
+    () => [
+      {
+        name: "No",
+        selector: (row, index) => index + 1,
+        width: "60px",
+        center: true,
+        sortable: false,
       },
-      sortable: true,
-      wrap: true,
-      minWidth: "150px",
-    },
-    {
-      name: "Aksi",
-      cell: (row) => (
-        <div className="flex justify-center items-center gap-3">
-          <button
-            onClick={() => openViewModal(row)}
-            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-            title="Lihat Detail"
-          >
-            <FaEye className="text-lg" />
-          </button>
-          <button
-            onClick={() => openEditModal(row)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="Edit"
-          >
-            <FaEdit className="text-lg" />
-          </button>
-          <button
-            onClick={() => openDeleteModal(row)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Hapus"
-          >
-            <FaTrash className="text-lg" />
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
-      allowOverflow: true,
-      button: true,
-      center: true,
-      minWidth: "150px",
-    },
-  ];
+      {
+        name: "Nama",
+        selector: (row) => row.name,
+        sortable: true,
+        minWidth: "150px",
+      },
+      {
+        name: "Email",
+        selector: (row) => row.email,
+        sortable: true,
+        minWidth: "200px",
+      },
+      {
+        name: "Tanggal Dibuat",
+        selector: (row) => row.created_at,
+        cell: (row) =>
+          new Date(row.created_at).toLocaleString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }),
+        sortable: true,
+        wrap: true,
+        minWidth: "170px",
+      },
+      {
+        name: "Aksi",
+        cell: (row) => (
+          <div className="flex items-center justify-center gap-2 md:gap-3">
+            <button
+              onClick={() => openViewModal(row)}
+              className="rounded-lg p-1.5 text-green-600 transition-colors hover:bg-green-100"
+              title="Lihat Detail"
+              aria-label={`Lihat detail ${row.name}`}
+            >
+              <FaEye className="text-base md:text-lg" />
+            </button>
+            <button
+              onClick={() => openEditModal(row)}
+              className="rounded-lg p-1.5 text-blue-600 transition-colors hover:bg-blue-100"
+              title="Edit"
+              aria-label={`Edit ${row.name}`}
+            >
+              <FaEdit className="text-base md:text-lg" />
+            </button>
+            <button
+              onClick={() => openDeleteModal(row)}
+              className="rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-100"
+              title="Hapus"
+              aria-label={`Hapus ${row.name}`}
+            >
+              <FaTrash className="text-base md:text-lg" />
+            </button>
+          </div>
+        ),
+        ignoreRowClick: true,
+        allowOverflow: true,
+        button: true,
+        center: true,
+        minWidth: "120px",
+      },
+    ],
+    []
+  );
 
-  // Custom styles untuk DataTable
-  const customStyles = {
-    table: {
-      style: {
-        backgroundColor: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: "0.5rem",
-        overflow: "hidden",
+  const customStyles = useMemo(
+    () => ({
+      table: {
+        style: {
+          borderRadius: "0.5rem",
+          overflow: "hidden",
+          border: "1px solid #e5e7eb",
+        },
       },
-    },
-    header: {
-      style: {
-        fontSize: "1.25rem",
-        fontWeight: "bold",
-        padding: "1rem",
-        backgroundColor: "#f8fafc",
-        borderBottom: "2px solid #e5e7eb",
+      header: {
+        style: {
+          fontSize: "1.125rem",
+          fontWeight: "600",
+          padding: "1rem",
+          backgroundColor: "#f9fafb",
+          borderBottom: "1px solid #e5e7eb",
+        },
       },
-    },
-    headRow: {
-      style: {
-        backgroundColor: "#f3f4f6",
-        borderBottomWidth: "2px",
+      subHeader: {
+        style: { padding: "1rem 1rem 0.5rem 1rem", backgroundColor: "#ffffff" },
       },
-    },
-    headCells: {
-      style: {
-        fontSize: "0.875rem",
-        fontWeight: "600",
-        padding: "0.75rem 1rem",
-        color: "#374151",
+      headRow: {
+        style: { backgroundColor: "#f3f4f6", borderBottomWidth: "1px" },
       },
-    },
-    cells: {
-      style: {
-        fontSize: "0.875rem",
-        padding: "0.75rem 1rem",
-        color: "#4b5563",
+      headCells: {
+        style: {
+          fontSize: "0.75rem",
+          fontWeight: "600",
+          padding: "0.75rem 1rem",
+          color: "#374151",
+          textTransform: "uppercase",
+        },
       },
-    },
-    pagination: {
-      style: {
-        borderTop: "1px solid #e5e7eb",
-        padding: "1rem",
+      cells: {
+        style: {
+          fontSize: "0.875rem",
+          padding: "0.75rem 1rem",
+          color: "#1f2937",
+          borderBottom: "1px solid #f3f4f6",
+        },
       },
-    },
-    responsiveWrapper: {
-      style: {
-        borderRadius: "0.5rem",
+      pagination: {
+        style: {
+          borderTop: "1px solid #e5e7eb",
+          padding: "0.5rem 1rem",
+          fontSize: "0.875rem",
+        },
       },
-    },
-  };
+      noData: {
+        style: { padding: "2rem", textAlign: "center", color: "#6b7280" },
+      },
+    }),
+    []
+  );
+
+  const paginationOptions = useMemo(
+    () => ({
+      rowsPerPageText: "Baris per halaman:",
+      rangeSeparatorText: "dari",
+      selectAllRowsItem: true,
+      selectAllRowsItemText: "Semua",
+    }),
+    []
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header: judul dan tombol tambah admin */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
-          Kelola Admin
+    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8 ">
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+          Manajemen Admin
         </h1>
         <button
           onClick={openAddModal}
-          className="flex items-center bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+          className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
-          <FaPlus className="mr-2 text-lg" />
-          Tambah Admin
+          <FaPlus className="mr-2 h-4 w-4" /> Tambah Admin
         </button>
       </div>
-      {/* Tabel DataTable */}
-      <div className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto">
+
+      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
         {loadingAdmins ? (
-          <p className="text-center text-gray-500">Memuat Admin...</p>
+          <div className="p-6 text-center text-gray-500">
+            Memuat data admin...
+          </div>
         ) : (
           <DataTable
             columns={columns}
             data={filteredAdmins}
             pagination
             paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50, 100]}
-            paginationComponentOptions={{
-              rowsPerPageText: "Baris per halaman:",
-              rangeSeparatorText: "dari",
-            }}
+            paginationRowsPerPageOptions={[10, 15, 20, 50]}
+            paginationComponentOptions={paginationOptions}
             paginationResetDefaultPage={resetPaginationToggle}
             subHeader
             subHeaderComponent={subHeaderComponent}
@@ -279,25 +277,24 @@ const Admin = () => {
             striped
             customStyles={customStyles}
             noDataComponent={
-              <div className="p-4 text-center text-gray-500">
-                Tidak ada data admin
+              <div className="py-10 text-center text-gray-500">
+                Tidak ada data admin ditemukan.
               </div>
             }
           />
         )}
       </div>
 
-      {/* Modals */}
       <AddAdminModal
         isOpen={isAddModalOpen}
         onClose={closeAddModal}
-        setAdmins={setAdmins}
+        onSuccess={handleSuccess}
       />
       <EditAdminModal
         isOpen={isEditModalOpen}
         onClose={closeEditModal}
         admin={selectedAdmin}
-        setAdmins={setAdmins}
+        onSuccess={handleSuccess}
       />
       <ViewAdminModal
         isOpen={isViewModalOpen}
@@ -308,7 +305,7 @@ const Admin = () => {
         isOpen={isDeleteModalOpen}
         onClose={closeDeleteModal}
         admin={selectedAdmin}
-        setAdmins={setAdmins}
+        onSuccess={handleSuccess}
       />
     </div>
   );

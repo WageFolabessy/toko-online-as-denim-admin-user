@@ -1,58 +1,78 @@
-import PropTypes from 'prop-types';
-import { FaTimes } from 'react-icons/fa';
-import { useEffect } from 'react';
+import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import PropTypes from "prop-types";
+import { FaTimes } from "react-icons/fa";
 
 const Modal = ({ isOpen, onClose, title, children }) => {
+  const modalRef = useRef(null);
+
   useEffect(() => {
     const handleEsc = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
       }
     };
     if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
+      document.addEventListener("keydown", handleEsc);
+      // Pindahkan fokus ke modal saat terbuka
+      modalRef.current?.focus();
+    } else {
+      document.removeEventListener("keydown", handleEsc);
     }
     return () => {
-      document.removeEventListener('keydown', handleEsc);
+      document.removeEventListener("keydown", handleEsc);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm" // Sedikit blur backdrop
       onClick={onClose}
+      role="presentation"
     >
       <div
-        className="relative w-full max-w-lg bg-white rounded-lg shadow-lg max-h-[90vh] flex flex-col"
+        ref={modalRef}
+        className="relative flex w-full max-w-lg flex-col rounded-lg bg-white shadow-xl max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? "modal-title" : undefined}
+        tabIndex="-1"
       >
-        {/* Header Modal */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          {title && <h2 className="text-2xl font-semibold text-gray-800">{title}</h2>}
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+          {title && (
+            <h2
+              id="modal-title"
+              className="text-xl font-semibold text-gray-800"
+            >
+              {title}
+            </h2>
+          )}
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 focus:outline-none"
+            className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             aria-label="Tutup Modal"
           >
-            <FaTimes className="w-5 h-5" />
+            <FaTimes className="h-5 w-5" />
           </button>
         </div>
-        {/* Konten Modal */}
-        <div className="p-6 overflow-y-auto">
+
+        <div className="overflow-y-auto px-5 py-4 sm:px-6 sm:py-5">
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
 Modal.propTypes = {
-  isOpen: PropTypes.bool,
-  onClose: PropTypes.func,
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
   title: PropTypes.string,
-  children: PropTypes.node,
+  children: PropTypes.node.isRequired,
 };
 
 export default Modal;
