@@ -1,4 +1,5 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
+import PropTypes from "prop-types";
 import {
   LineChart,
   Line,
@@ -10,64 +11,113 @@ import {
 } from "recharts";
 import { AppContext } from "../../context/AppContext";
 import { toast } from "react-toastify";
+import { getDashboardSalesData } from "../../services/dashboardApi";
+import { FaSpinner, FaExclamationTriangle } from "react-icons/fa";
 
-const SalesChart = () => {
+const SalesChart = ({ startDate, endDate }) => {
   const { authFetch } = useContext(AppContext);
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchChartData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const params = { start_date: startDate, end_date: endDate };
+      const chartData = await getDashboardSalesData(authFetch, params);
+      setData(chartData);
+    } catch (err) {
+      console.error("Error fetching sales chart data:", err);
+      setError(err.message || "Gagal memuat data chart penjualan.");
+      toast.error("Gagal memuat data chart penjualan.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [authFetch, startDate, endDate]);
 
   useEffect(() => {
-    const fetchSalesChartData = async () => {
-      try {
-        const response = await authFetch("/api/admin/dashboard/sales_data", {
-          method: "GET",
-        });
-        if (!response.ok) throw new Error("Gagal mengambil data sales chart");
-        const chartData = await response.json();
-        setData(chartData);
-      } catch (error) {
-        console.error(error);
-        toast.error("Terjadi kesalahan saat mengambil data sales chart");
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchChartData();
+  }, [fetchChartData]);
 
-    fetchSalesChartData();
-  }, [authFetch]);
+  const formatCurrencyAxis = (value) => `Rp${(value / 1000000).toFixed(0)} Jt`;
+  const formatCurrencyTooltip = (value) =>
+    `Rp ${Number(value).toLocaleString("id-ID")}`;
 
-  if (loading)
-    return (
-      <div className="p-4 text-center text-gray-500">Loading chart...</div>
+  let content;
+  if (isLoading) {
+    content = (
+      <div className="flex h-[300px] items-center justify-center text-gray-500">
+        <FaSpinner className="animate-spin mr-2" /> Memuat chart...
+      </div>
     );
-
-  return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Sales Over Time</h2>
+  } else if (error) {
+    content = (
+      <div className="flex h-[300px] items-center justify-center text-red-500">
+        <FaExclamationTriangle className="mr-2" /> Error: {error}
+      </div>
+    );
+  } else if (data.length === 0) {
+    content = (
+      <div className="flex h-[300px] items-center justify-center text-gray-400">
+        Tidak ada data penjualan untuk periode ini.
+      </div>
+    );
+  } else {
+    content = (
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
           data={data}
-          margin={{ top: 20, right: 20, bottom: 20, left: 50 }}
+          margin={{ top: 5, right: 5, bottom: 5, left: 50 }}
         >
-          <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
-          <XAxis dataKey="name" />
+          <CartesianGrid
+            stroke="#e5e7eb"
+            strokeDasharray="3 3"
+            vertical={false}
+          />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
           <YAxis
-            tickFormatter={(value) => `Rp ${value.toLocaleString("id-ID")}`}
+            tickFormatter={formatCurrencyAxis}
+            tick={{ fontSize: 11 }}
+            width={80}
           />
           <Tooltip
-            formatter={(value) => `Rp ${value.toLocaleString("id-ID")}`}
-            labelFormatter={(label) => `Month: ${label}`}
+            formatter={(value) => [formatCurrencyTooltip(value), "Penjualan"]}
+            labelFormatter={(label) => `Periode: ${label}`}
+            contentStyle={{
+              fontSize: 12,
+              borderRadius: "0.375rem",
+              boxShadow: "rgba(0, 0, 0, 0.1) 0px 4px 12px",
+            }}
+            itemStyle={{ padding: "2px 0" }}
           />
           <Line
             type="monotone"
-            dataKey="Sales"
-            stroke="#3b82f6"
+            dataKey="value"
+            name="Penjualan"
+            stroke="#4f46e5"
             strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 6 }}
           />
         </LineChart>
       </ResponsiveContainer>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        Total Penjualan per Bulan
+      </h2>
+      {content}
     </div>
   );
+};
+
+SalesChart.propTypes = {
+  startDate: PropTypes.string,
+  endDate: PropTypes.string,
 };
 
 export default SalesChart;

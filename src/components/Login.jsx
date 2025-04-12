@@ -67,9 +67,9 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
-        <h1 className="mb-6 text-center text-3xl font-bold text-gray-800">
+    <div className="flex min-h-screen items-center justify-center bg-red-700 px-4">
+      <div className="w-full max-w-md rounded-lg bg-indigo-700 p-8 shadow-xl">
+        <h1 className="mb-6 text-center text-3xl font-bold text-red-500">
           Admin Panel Login
         </h1>
         <form onSubmit={handleSubmit} noValidate>
@@ -81,7 +81,7 @@ const Login = () => {
           <div className="mb-5">
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-red-500"
             >
               Alamat Email
             </label>
@@ -92,7 +92,7 @@ const Login = () => {
               value={email}
               onChange={handleInputChange(setEmail)}
               required
-              className={`w-full rounded-md border px-3 py-2 shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 ${
+              className={`bg-red-500 text-white w-full rounded-md border px-3 py-2 shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 ${
                 errors.email
                   ? "border-red-500 focus:ring-red-500"
                   : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
@@ -105,7 +105,7 @@ const Login = () => {
           <div className="mb-6">
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-red-500"
             >
               Kata Sandi
             </label>
@@ -116,7 +116,7 @@ const Login = () => {
               value={password}
               onChange={handleInputChange(setPassword)}
               required
-              className={`w-full rounded-md border px-3 py-2 shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 ${
+              className={`bg-red-500 text-white w-full rounded-md border px-3 py-2 shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 ${
                 errors.password
                   ? "border-red-500 focus:ring-red-500"
                   : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
@@ -132,7 +132,7 @@ const Login = () => {
             className={`w-full rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               loading
                 ? "cursor-not-allowed bg-indigo-400"
-                : "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+                : "bg-indigo-600 hover:bg-red-500 focus:ring-indigo-500"
             }`}
           >
             {loading ? "Memproses..." : "Masuk"}

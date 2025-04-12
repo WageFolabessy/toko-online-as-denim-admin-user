@@ -23,7 +23,7 @@ const Navbar = ({ setIsSidebarOpen }) => {
   const userName = user?.name || "Admin";
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-indigo-900 shadow-lg h-16">
+    <nav className="fixed top-0 w-full z-50 bg-indigo-700 shadow-lg h-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         <div className="flex items-center">
           <button
