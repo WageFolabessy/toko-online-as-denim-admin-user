@@ -14,7 +14,6 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     };
     if (isOpen) {
       document.addEventListener("keydown", handleEsc);
-      // Pindahkan fokus ke modal saat terbuka
       modalRef.current?.focus();
     } else {
       document.removeEventListener("keydown", handleEsc);
@@ -28,13 +27,13 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm" // Sedikit blur backdrop
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4 sm:p-6" // Tambahkan padding p-4 sm:p-6
       onClick={onClose}
       role="presentation"
     >
       <div
         ref={modalRef}
-        className="relative flex w-full max-w-lg flex-col rounded-lg bg-white shadow-xl max-h-[90vh]"
+        className="relative flex w-full max-w-3xl flex-col rounded-lg bg-white shadow-xl max-h-[90vh]" // Ganti max-w-lg -> max-w-3xl
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

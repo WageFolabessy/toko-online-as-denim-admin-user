@@ -121,14 +121,6 @@ const UserDetailModal = ({ isOpen, onClose, user }) => {
               value={<StatusBadge isActive={detailedUser.is_active} />}
             />
             <DetailItem
-              label="Email Terverifikasi"
-              value={
-                detailedUser.email_verified_at
-                  ? formatDateTime(detailedUser.email_verified_at)
-                  : "Belum"
-              }
-            />
-            <DetailItem
               label="Tanggal Daftar"
               value={formatDateTime(detailedUser.created_at)}
             />
