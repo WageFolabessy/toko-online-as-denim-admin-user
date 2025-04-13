@@ -23,7 +23,7 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-indigo-50 min-h-screen">
       <ToastContainer />
       {token ? (
         <>
