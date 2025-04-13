@@ -2,11 +2,9 @@ import { useContext, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Login from "./components/Login";
-
 import Dashboard from "./pages/Dashboard";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
@@ -18,7 +16,6 @@ import Review from "./pages/Review";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import SalesReport from "./pages/SaleReport";
-
 import { AppContext } from "./context/AppContext";
 
 const App = () => {
@@ -26,7 +23,7 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="bg-indigo-200 min-h-screen">
+    <div className="bg-gray-100 min-h-screen">
       <ToastContainer />
       {token ? (
         <>

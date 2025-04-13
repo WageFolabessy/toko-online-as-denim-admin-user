@@ -63,6 +63,7 @@ const Dashboard = () => {
   };
 
   let summaryContent;
+
   if (loadingSummary) {
     summaryContent = (
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -73,7 +74,8 @@ const Dashboard = () => {
     );
   } else if (fetchError) {
     summaryContent = (
-      <div className="rounded-md bg-red-50 p-4 text-center text-red-700">
+      <div className="rounded-md bg-red-100 p-4 text-center text-red-800">
+        {" "}
         {fetchError}
       </div>
     );
@@ -120,13 +122,13 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-800 md:text-3xl">
+      <h1 className="mb-6 text-2xl font-bold text-indigo-900 md:text-3xl">
         {" "}
-        Dashboard{" "}
+        Dashboard
       </h1>
 
-      {/* Filter Area */}
-      <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
+      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        {" "}
         <form onSubmit={handleFilterSubmit}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:items-end">
             <div>
@@ -182,7 +184,6 @@ const Dashboard = () => {
         </form>
       </div>
 
-      {/* Summary Cards */}
       <div className="mb-6">
         {summaryContent}
         {summary?.period && !loadingSummary && (
@@ -193,16 +194,17 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Charts */}
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Beri border atau shadow berbeda? Biarkan sama dulu */}
-        <div className="rounded-xl border bg-white p-4 shadow-lg sm:p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
+          {" "}
+          {/* Added border */}
           <SalesChart
             startDate={dateFilter.start_date}
             endDate={dateFilter.end_date}
           />
         </div>
-        <div className="rounded-xl border bg-white p-4 shadow-lg sm:p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
+          {" "}
           <OrdersChart
             startDate={dateFilter.start_date}
             endDate={dateFilter.end_date}
@@ -210,8 +212,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Recent Orders */}
-      <div className="rounded-xl border bg-white p-4 shadow-lg sm:p-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
+        {" "}
         <RecentOrders
           startDate={dateFilter.start_date}
           endDate={dateFilter.end_date}

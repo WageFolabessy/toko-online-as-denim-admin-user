@@ -45,6 +45,7 @@ const SalesChart = ({ startDate, endDate }) => {
     `Rp ${Number(value).toLocaleString("id-ID")}`;
 
   let content;
+
   if (isLoading) {
     content = (
       <div className="flex h-[300px] items-center justify-center text-gray-500">
@@ -53,7 +54,8 @@ const SalesChart = ({ startDate, endDate }) => {
     );
   } else if (error) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-red-500">
+      <div className="flex h-[300px] items-center justify-center text-red-600">
+        {" "}
         <FaExclamationTriangle className="mr-2" /> Error: {error}
       </div>
     );
@@ -107,7 +109,8 @@ const SalesChart = ({ startDate, endDate }) => {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">
+      <h2 className="text-lg font-semibold text-indigo-900 mb-4">
+        {" "}
         Total Penjualan per Bulan
       </h2>
       {content}

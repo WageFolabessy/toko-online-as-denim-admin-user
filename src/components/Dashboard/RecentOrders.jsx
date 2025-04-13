@@ -10,6 +10,7 @@ const FormattedPrice = ({ value }) => {
   if (value === null || value === undefined || value === "") return "-";
   return `Rp ${Number(value).toLocaleString("id-ID")}`;
 };
+
 FormattedPrice.propTypes = {
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
@@ -18,7 +19,9 @@ const StatusBadge = ({ status, type = "order" }) => {
   const statusText = status
     ? status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     : "N/A";
+
   let colorClass = "bg-gray-100 text-gray-800";
+
   const orderColors = {
     cancelled: "bg-red-100 text-red-800",
     awaiting_payment: "bg-yellow-100 text-yellow-800",
@@ -26,7 +29,7 @@ const StatusBadge = ({ status, type = "order" }) => {
     processed: "bg-purple-100 text-purple-800",
     shipped: "bg-cyan-100 text-cyan-800",
     delivered: "bg-green-100 text-green-800",
-    failed: "bg-gray-100 text-gray-800",
+    failed: "bg-red-100 text-red-800",
   };
   const paymentColors = {
     pending: "bg-yellow-100 text-yellow-800",
@@ -45,10 +48,21 @@ const StatusBadge = ({ status, type = "order" }) => {
     shipped: "bg-cyan-100 text-cyan-800",
     delivered: "bg-green-100 text-green-800",
   };
+
   if (type === "order") colorClass = orderColors[status] || colorClass;
   else if (type === "payment") colorClass = paymentColors[status] || colorClass;
   else if (type === "shipment")
     colorClass = shipmentColors[status] || colorClass;
+
+  if (
+    colorClass === "bg-gray-100 text-gray-800" &&
+    status &&
+    status !== "expire" &&
+    status !== "expired"
+  ) {
+    colorClass = "bg-gray-100 text-gray-800";
+  }
+
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colorClass}`}
@@ -57,7 +71,11 @@ const StatusBadge = ({ status, type = "order" }) => {
     </span>
   );
 };
-StatusBadge.propTypes = { status: PropTypes.string, type: PropTypes.string };
+
+StatusBadge.propTypes = {
+  status: PropTypes.string,
+  type: PropTypes.string,
+};
 
 const RecentOrders = ({ startDate, endDate }) => {
   const { authFetch } = useContext(AppContext);
@@ -105,6 +123,7 @@ const RecentOrders = ({ startDate, endDate }) => {
   };
 
   let content;
+
   if (isLoading) {
     content = (
       <div className="flex items-center justify-center p-6 text-gray-500">
@@ -113,11 +132,12 @@ const RecentOrders = ({ startDate, endDate }) => {
     );
   } else if (error) {
     content = (
-      <div className="rounded-md bg-red-50 p-4">
+      <div className="rounded-md bg-red-100 p-4">
+        {" "}
         <div className="flex">
           <div className="flex-shrink-0">
             <FaExclamationTriangle
-              className="h-5 w-5 text-red-400"
+              className="h-5 w-5 text-red-500"
               aria-hidden="true"
             />
           </div>
@@ -188,9 +208,8 @@ const RecentOrders = ({ startDate, endDate }) => {
             {recentOrders.map((order) => (
               <tr key={order.id} className="hover:bg-gray-50">
                 <td className="py-2 px-3 whitespace-nowrap">
-                  {/* Ganti warna link ke Indigo */}
                   <Link
-                    to="/orders" // Arahkan ke list orders
+                    to="/orders"
                     className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
                     title={`Lihat daftar pesanan (termasuk ${order.order_number})`}
                   >
@@ -219,7 +238,8 @@ const RecentOrders = ({ startDate, endDate }) => {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+      <h2 className="text-lg font-semibold text-indigo-900 mb-3">
+        {" "}
         Pesanan Terbaru
       </h2>
       {content}
