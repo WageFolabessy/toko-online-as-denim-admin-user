@@ -74,8 +74,7 @@ const Dashboard = () => {
     );
   } else if (fetchError) {
     summaryContent = (
-      <div className="rounded-md bg-red-100 p-4 text-center text-red-800">
-        {" "}
+      <div className="rounded-md bg-red-100 p-4 text-center text-red-800 border border-red-200">
         {fetchError}
       </div>
     );
@@ -87,6 +86,7 @@ const Dashboard = () => {
           value={summary.formatted_total_sales ?? "-"}
           icon={<FaMoneyBillWave />}
           iconBgColor="bg-indigo-100"
+          bgColor="bg-red-100"
           iconTextColor="text-indigo-600"
         />
         <SummaryCard
@@ -102,6 +102,7 @@ const Dashboard = () => {
           icon={<FaUsers />}
           iconBgColor="bg-indigo-100"
           iconTextColor="text-indigo-600"
+          bgColor="bg-red-100"
         />
         <SummaryCard
           title="Total Produk"
@@ -114,7 +115,7 @@ const Dashboard = () => {
     );
   } else {
     summaryContent = (
-      <div className="text-center text-gray-500">
+      <div className="text-center text-gray-500 py-4">
         Data rangkuman tidak tersedia.
       </div>
     );
@@ -123,18 +124,16 @@ const Dashboard = () => {
   return (
     <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <h1 className="mb-6 text-2xl font-bold text-indigo-900 md:text-3xl">
-        {" "}
         Dashboard
       </h1>
 
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        {" "}
+      <div className="mb-6 rounded-lg border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
         <form onSubmit={handleFilterSubmit}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:items-end">
             <div>
               <label
                 htmlFor="dash_start_date"
-                className="block text-xs font-medium text-gray-700 mb-1"
+                className="block text-xs font-medium text-indigo-800 mb-1"
               >
                 Periode Mulai
               </label>
@@ -144,13 +143,13 @@ const Dashboard = () => {
                 name="start_date"
                 value={dateFilter.start_date}
                 onChange={handleDateChange}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3"
+                className="bg-red-100 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3"
               />
             </div>
             <div>
               <label
                 htmlFor="dash_end_date"
-                className="block text-xs font-medium text-gray-700 mb-1"
+                className="block text-xs font-medium text-indigo-800 mb-1"
               >
                 Periode Selesai
               </label>
@@ -161,7 +160,7 @@ const Dashboard = () => {
                 value={dateFilter.end_date}
                 onChange={handleDateChange}
                 min={dateFilter.start_date || undefined}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3"
+                className="block w-full rounded-md border-gray-300 bg-red-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3"
               />
             </div>
             <div className="flex items-end gap-2 pt-5 md:pt-0 lg:col-span-2 xl:col-span-1">
@@ -175,7 +174,7 @@ const Dashboard = () => {
                 type="button"
                 onClick={handleClearFilters}
                 title="Reset Periode"
-                className="inline-flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-md border border-indigo-300 bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
               >
                 Reset
               </button>
@@ -195,16 +194,13 @@ const Dashboard = () => {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
-          {" "}
-          {/* Added border */}
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 shadow-lg sm:p-6">
           <SalesChart
             startDate={dateFilter.start_date}
             endDate={dateFilter.end_date}
           />
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
-          {" "}
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 shadow-lg sm:p-6">
           <OrdersChart
             startDate={dateFilter.start_date}
             endDate={dateFilter.end_date}
@@ -212,8 +208,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
-        {" "}
+      <div className="rounded-xl border border-gray-200 bg-red-50 p-4 shadow-lg sm:p-6">
         <RecentOrders
           startDate={dateFilter.start_date}
           endDate={dateFilter.end_date}

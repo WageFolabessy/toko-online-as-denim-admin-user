@@ -20,7 +20,7 @@ const StatusBadge = ({ status, type = "order" }) => {
     ? status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     : "N/A";
 
-  let colorClass = "bg-gray-100 text-gray-800";
+  let colorClass = "bg-gray-200 text-gray-800";
 
   const orderColors = {
     cancelled: "bg-red-100 text-red-800",
@@ -39,8 +39,8 @@ const StatusBadge = ({ status, type = "order" }) => {
     completed: "bg-green-100 text-green-800",
     failed: "bg-red-100 text-red-800",
     failure: "bg-red-100 text-red-800",
-    expire: "bg-gray-100 text-gray-800",
-    expired: "bg-gray-100 text-gray-800",
+    expire: "bg-gray-200 text-gray-800",
+    expired: "bg-gray-200 text-gray-800",
     cancelled: "bg-red-100 text-red-800",
   };
   const shipmentColors = {
@@ -55,12 +55,12 @@ const StatusBadge = ({ status, type = "order" }) => {
     colorClass = shipmentColors[status] || colorClass;
 
   if (
-    colorClass === "bg-gray-100 text-gray-800" &&
+    colorClass === "bg-gray-200 text-gray-800" &&
     status &&
     status !== "expire" &&
     status !== "expired"
   ) {
-    colorClass = "bg-gray-100 text-gray-800";
+    colorClass = "bg-gray-200 text-gray-800";
   }
 
   return (
@@ -132,8 +132,7 @@ const RecentOrders = ({ startDate, endDate }) => {
     );
   } else if (error) {
     content = (
-      <div className="rounded-md bg-red-100 p-4">
-        {" "}
+      <div className="rounded-md bg-red-100 p-4 border border-red-200">
         <div className="flex">
           <div className="flex-shrink-0">
             <FaExclamationTriangle
@@ -162,70 +161,72 @@ const RecentOrders = ({ startDate, endDate }) => {
     );
   } else if (recentOrders.length === 0) {
     content = (
-      <div className="p-6 text-center text-gray-400">
+      <div className="p-6 text-center text-gray-500">
         Tidak ada pesanan terbaru untuk periode ini.
       </div>
     );
   } else {
     content = (
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg shadow ring-1 ring-black ring-opacity-5">
+        {" "}
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-indigo-100">
+            {" "}
             <tr>
               <th
                 scope="col"
-                className="py-2 px-3 text-left font-semibold text-gray-600"
+                className="py-2.5 px-3 text-left font-semibold text-gray-700"
               >
                 No. Pesanan
               </th>
               <th
                 scope="col"
-                className="py-2 px-3 text-left font-semibold text-gray-600"
+                className="py-2.5 px-3 text-left font-semibold text-gray-700"
               >
                 Pelanggan
               </th>
               <th
                 scope="col"
-                className="py-2 px-3 text-left font-semibold text-gray-600"
+                className="py-2.5 px-3 text-left font-semibold text-gray-700"
               >
                 Tanggal
               </th>
               <th
                 scope="col"
-                className="py-2 px-3 text-right font-semibold text-gray-600"
+                className="py-2.5 px-3 text-right font-semibold text-gray-700"
               >
                 Total
               </th>
               <th
                 scope="col"
-                className="py-2 px-3 text-center font-semibold text-gray-600"
+                className="py-2.5 px-3 text-center font-semibold text-gray-700"
               >
                 Status
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-gray-300 bg-indigo-100">
             {recentOrders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50">
-                <td className="py-2 px-3 whitespace-nowrap">
+              <tr key={order.id} className="hover:bg-red-200/75">
+                <td className="py-2.5 px-3 whitespace-nowrap">
                   <Link
                     to="/orders"
-                    className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                    className="font-medium text-indigo-700 hover:text-indigo-800 hover:underline"
                     title={`Lihat daftar pesanan (termasuk ${order.order_number})`}
                   >
                     {order.order_number}
                   </Link>
                 </td>
-                <td className="py-2 px-3 whitespace-nowrap">
+                <td className="py-2.5 px-3 whitespace-nowrap text-gray-700">
                   {order.user?.name ?? "N/A"}
                 </td>
-                <td className="py-2 px-3 whitespace-nowrap text-gray-500">
+                <td className="py-2.5 px-3 whitespace-nowrap text-gray-600">
                   {formatDateTime(order.created_at)}
                 </td>
-                <td className="py-2 px-3 whitespace-nowrap text-right">
+                <td className="py-2.5 px-3 whitespace-nowrap text-right text-gray-700">
                   <FormattedPrice value={order.total_amount} />
                 </td>
-                <td className="py-2 px-3 whitespace-nowrap text-center">
+                <td className="py-2.5 px-3 whitespace-nowrap text-center">
                   <StatusBadge status={order.status} type="order" />
                 </td>
               </tr>
@@ -238,8 +239,7 @@ const RecentOrders = ({ startDate, endDate }) => {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-indigo-900 mb-3">
-        {" "}
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">
         Pesanan Terbaru
       </h2>
       {content}

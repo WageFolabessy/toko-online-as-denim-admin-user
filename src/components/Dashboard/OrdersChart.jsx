@@ -50,14 +50,13 @@ const OrdersChart = ({ startDate, endDate }) => {
     );
   } else if (error) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-red-600">
-        {" "}
-        <FaExclamationTriangle className="mr-2" /> Error: {error}
+      <div className="flex h-[300px] items-center justify-center text-red-700">
+        <FaExclamationTriangle className="mr-2 text-red-500" /> Error: {error}
       </div>
     );
   } else if (data.length === 0) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-gray-400">
+      <div className="flex h-[300px] items-center justify-center text-red-800 opacity-75">
         Tidak ada data pesanan untuk periode ini.
       </div>
     );
@@ -69,12 +68,16 @@ const OrdersChart = ({ startDate, endDate }) => {
           margin={{ top: 5, right: 0, bottom: 5, left: -10 }}
         >
           <CartesianGrid
-            stroke="#e5e7eb"
+            stroke="#fecaca"
             strokeDasharray="3 3"
             vertical={false}
           />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={40} />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+          <YAxis
+            allowDecimals={false}
+            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            width={40}
+          />
           <Tooltip
             formatter={(value) => [`${value} Pesanan`, "Jumlah"]}
             labelFormatter={(label) => `Periode: ${label}`}
@@ -82,13 +85,16 @@ const OrdersChart = ({ startDate, endDate }) => {
               fontSize: 12,
               borderRadius: "0.375rem",
               boxShadow: "rgba(0, 0, 0, 0.1) 0px 4px 12px",
+              background: "rgba(255, 255, 255, 0.9)",
+              borderColor: "#fecaca",
             }}
             itemStyle={{ padding: "2px 0" }}
+            cursor={{ fill: "rgba(239, 68, 68, 0.1)" }}
           />
           <Bar
             dataKey="value"
             name="Jumlah Pesanan"
-            fill="#dc2626"
+            fill="#ef4444"
             barSize={30}
             radius={[4, 4, 0, 0]}
           />
@@ -99,8 +105,7 @@ const OrdersChart = ({ startDate, endDate }) => {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-indigo-900 mb-4">
-        {" "}
+      <h2 className="text-lg font-semibold text-red-900 mb-4">
         Jumlah Pesanan per Bulan
       </h2>
       {content}

@@ -54,14 +54,13 @@ const SalesChart = ({ startDate, endDate }) => {
     );
   } else if (error) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-red-600">
-        {" "}
-        <FaExclamationTriangle className="mr-2" /> Error: {error}
+      <div className="flex h-[300px] items-center justify-center text-red-700">
+        <FaExclamationTriangle className="mr-2 text-red-500" /> Error: {error}
       </div>
     );
   } else if (data.length === 0) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-gray-400">
+      <div className="flex h-[300px] items-center justify-center text-indigo-800 opacity-75">
         Tidak ada data penjualan untuk periode ini.
       </div>
     );
@@ -73,14 +72,14 @@ const SalesChart = ({ startDate, endDate }) => {
           margin={{ top: 5, right: 5, bottom: 5, left: 50 }}
         >
           <CartesianGrid
-            stroke="#e5e7eb"
+            stroke="#c7d2fe"
             strokeDasharray="3 3"
             vertical={false}
           />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} />
           <YAxis
             tickFormatter={formatCurrencyAxis}
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: "#9ca3af" }}
             width={80}
           />
           <Tooltip
@@ -90,17 +89,25 @@ const SalesChart = ({ startDate, endDate }) => {
               fontSize: 12,
               borderRadius: "0.375rem",
               boxShadow: "rgba(0, 0, 0, 0.1) 0px 4px 12px",
+              background: "rgba(255, 255, 255, 0.9)",
+              borderColor: "#c7d2fe",
             }}
             itemStyle={{ padding: "2px 0" }}
+            cursor={{ stroke: "rgba(99, 102, 241, 0.3)", strokeWidth: 1 }}
           />
           <Line
             type="monotone"
             dataKey="value"
             name="Penjualan"
-            stroke="#4f46e5"
+            stroke="#6366f1"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 6 }}
+            activeDot={{
+              r: 6,
+              fill: "#4338ca",
+              stroke: "#c7d2fe",
+              strokeWidth: 2,
+            }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -110,7 +117,6 @@ const SalesChart = ({ startDate, endDate }) => {
   return (
     <div>
       <h2 className="text-lg font-semibold text-indigo-900 mb-4">
-        {" "}
         Total Penjualan per Bulan
       </h2>
       {content}
