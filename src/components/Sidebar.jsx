@@ -22,10 +22,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { name: "Pesanan", icon: <FaShoppingCart />, path: "/orders" },
     { name: "Pembayaran", icon: <FaMoneyBillWave />, path: "/payments" },
     { name: "Pengiriman", icon: <FaTruck />, path: "/shipments" },
-    { name: "Pengguna", icon: <FaUsers />, path: "/users" },
     { name: "Ulasan Produk", icon: <FaStar />, path: "/reviews" },
     { name: "Laporan Penjualan", icon: <FaChartLine />, path: "/report" },
-    { name: "Admin", icon: <FaUserShield />, path: "/admins" },
+    { name: "Manajemen Pengguna", icon: <FaUsers />, path: "/users" },
+    { name: "Manajemen Admin", icon: <FaUserShield />, path: "/admins" },
   ];
 
   return (

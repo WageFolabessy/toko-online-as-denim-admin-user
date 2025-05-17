@@ -286,7 +286,7 @@ const User = () => {
   return (
     <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
       <h1 className="mb-6 text-2xl font-bold text-gray-900 md:text-3xl">
-        Manajemen Pengguna Situs
+        Manajemen Pengguna
       </h1>
 
       <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
