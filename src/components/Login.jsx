@@ -65,7 +65,7 @@ const Login = () => {
             className="mx-auto h-12 w-auto"
           />
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-800">
-            Admin Panel Login
+            Admin Login
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Selamat datang kembali, silakan masuk.

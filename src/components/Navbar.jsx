@@ -57,7 +57,7 @@ const Navbar = ({ setIsSidebarOpen }) => {
             >
               <div className="py-1" role="none">
                 <Link
-                  to="/profile"
+                  to="/profil"
                   onClick={() => setDropdownOpen(false)}
                   className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
                   role="menuitem"

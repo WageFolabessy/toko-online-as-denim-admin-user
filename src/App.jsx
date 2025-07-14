@@ -9,10 +9,8 @@ import Dashboard from "./pages/Dashboard";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
 import Order from "./pages/Order";
-import Payment from "./pages/Payment";
 import Shipment from "./pages/Shipment";
 import User from "./pages/User";
-import Review from "./pages/Review";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import SalesReport from "./pages/SaleReport";
@@ -33,16 +31,14 @@ const App = () => {
             <main className="flex-1 min-h-screen pt-16 p-6 overflow-y-auto">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/products" element={<Product />} />
-                <Route path="/categories" element={<Category />} />
-                <Route path="/orders" element={<Order />} />
-                <Route path="/payments" element={<Payment />} />
-                <Route path="/shipments" element={<Shipment />} />
-                <Route path="/users" element={<User />} />
-                <Route path="/reviews" element={<Review />} />
-                <Route path="/report" element={<SalesReport />} />
-                <Route path="/admins" element={<Admin />} />
+                <Route path="/profil" element={<Profile />} />
+                <Route path="/produk" element={<Product />} />
+                <Route path="/kategori" element={<Category />} />
+                <Route path="/pesanan" element={<Order />} />
+                <Route path="/pengiriman" element={<Shipment />} />
+                <Route path="/pelanggan" element={<User />} />
+                <Route path="/laporan" element={<SalesReport />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </main>

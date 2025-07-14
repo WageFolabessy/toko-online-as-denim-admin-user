@@ -7,26 +7,22 @@ import {
   FaBoxOpen,
   FaTags,
   FaShoppingCart,
-  FaMoneyBillWave,
   FaTruck,
   FaUsers,
-  FaStar,
   FaUserShield,
   FaChartLine,
 } from "react-icons/fa";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const menuItems = [
-    { name: "Dashboard", icon: <FaTachometerAlt />, path: "/" },
-    { name: "Kategori", icon: <FaTags />, path: "/categories" },
-    { name: "Produk", icon: <FaBoxOpen />, path: "/products" },
-    { name: "Pesanan", icon: <FaShoppingCart />, path: "/orders" },
-    { name: "Pembayaran", icon: <FaMoneyBillWave />, path: "/payments" },
-    { name: "Pengiriman", icon: <FaTruck />, path: "/shipments" },
-    { name: "Ulasan Produk", icon: <FaStar />, path: "/reviews" },
-    { name: "Laporan Penjualan", icon: <FaChartLine />, path: "/report" },
-    { name: "Manajemen Pengguna", icon: <FaUsers />, path: "/users" },
-    { name: "Manajemen Admin", icon: <FaUserShield />, path: "/admins" },
+    { name: "Dasbor", icon: <FaTachometerAlt />, path: "/" },
+    { name: "Kategori", icon: <FaTags />, path: "/kategori" },
+    { name: "Produk", icon: <FaBoxOpen />, path: "/produk" },
+    { name: "Pesanan", icon: <FaShoppingCart />, path: "/pesanan" },
+    { name: "Pengiriman", icon: <FaTruck />, path: "/pengiriman" },
+    { name: "Laporan Penjualan", icon: <FaChartLine />, path: "/laporan" },
+    { name: "Manajemen Pengguna", icon: <FaUsers />, path: "/pelanggan" },
+    { name: "Manajemen Admin", icon: <FaUserShield />, path: "/admin" },
   ];
 
   return (

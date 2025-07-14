@@ -1,14 +1,11 @@
 import { useEffect, useState, useContext, useCallback } from "react";
 import { AppContext } from "../context/AppContext";
 import SummaryCard from "../components/Dashboard/SummaryCard";
-import SalesChart from "../components/Dashboard/SalesChart";
-import OrdersChart from "../components/Dashboard/OrdersChart";
-import RecentOrders from "../components/Dashboard/RecentOrders";
 import {
-  FaMoneyBillWave,
-  FaShoppingCart,
-  FaUsers,
-  FaBoxOpen,
+  FaDollarSign,
+  FaCartArrowDown,
+  FaUser,
+  FaBox,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { getDashboardSummary } from "../services/dashboardApi";
@@ -84,28 +81,28 @@ const Dashboard = () => {
         <SummaryCard
           title="Total Penjualan"
           value={summary.formatted_total_sales ?? "-"}
-          icon={<FaMoneyBillWave />}
+          icon={<FaDollarSign />}
           iconBgColor="bg-green-100"
           iconTextColor="text-green-600"
         />
         <SummaryCard
           title="Total Pesanan"
           value={summary.total_orders ?? 0}
-          icon={<FaShoppingCart />}
+          icon={<FaCartArrowDown />}
           iconBgColor="bg-blue-100"
           iconTextColor="text-blue-600"
         />
         <SummaryCard
           title="Total Pengguna"
           value={summary.total_users ?? 0}
-          icon={<FaUsers />}
+          icon={<FaUser />}
           iconBgColor="bg-sky-100"
           iconTextColor="text-sky-600"
         />
         <SummaryCard
           title="Total Produk"
           value={summary.total_products ?? 0}
-          icon={<FaBoxOpen />}
+          icon={<FaBox />}
           iconBgColor="bg-amber-100"
           iconTextColor="text-amber-600"
         />
@@ -187,28 +184,6 @@ const Dashboard = () => {
             {summary.period.end_date}
           </p>
         )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:col-span-3">
-          <SalesChart
-            startDate={dateFilter.start_date}
-            endDate={dateFilter.end_date}
-          />
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
-          <OrdersChart
-            startDate={dateFilter.start_date}
-            endDate={dateFilter.end_date}
-          />
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <RecentOrders
-          startDate={dateFilter.start_date}
-          endDate={dateFilter.end_date}
-        />
       </div>
     </div>
   );
