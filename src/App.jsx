@@ -23,14 +23,14 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="bg-indigo-50 min-h-screen">
+    <div className="bg-slate-50 min-h-screen text-slate-800">
       <ToastContainer />
       {token ? (
         <>
           <Navbar setIsSidebarOpen={setIsSidebarOpen} />
-          <div className="flex pt-16">
+          <div className="flex">
             <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-            <main className="flex-1 min-h-screen p-4 md:p-6 lg:p-8 overflow-y-auto">
+            <main className="flex-1 min-h-screen pt-16 p-6 overflow-y-auto">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />

@@ -16,22 +16,20 @@ FormattedPrice.propTypes = {
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
 
-const StatusBadge = ({ status, type = "payment" }) => {
+const StatusBadge = ({ status }) => {
   const statusText = status
     ? status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     : "N/A";
-  let colorClass = "bg-gray-100 text-gray-800";
-
+  let colorClass = "bg-slate-100 text-slate-800";
   const colors = {
     pending: "bg-yellow-100 text-yellow-800",
     paid: "bg-green-100 text-green-800",
-    settlement: "bg-green-100 text-green-800", // Alias
-    completed: "bg-green-100 text-green-800", // Alias
+    settlement: "bg-green-100 text-green-800",
+    completed: "bg-green-100 text-green-800",
     failed: "bg-red-100 text-red-800",
-    expired: "bg-gray-100 text-gray-800",
+    expired: "bg-slate-100 text-slate-800",
   };
   colorClass = colors[status] || colorClass;
-
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colorClass}`}
@@ -40,7 +38,7 @@ const StatusBadge = ({ status, type = "payment" }) => {
     </span>
   );
 };
-StatusBadge.propTypes = { status: PropTypes.string, type: PropTypes.string };
+StatusBadge.propTypes = { status: PropTypes.string };
 
 const Payment = () => {
   const { authFetch } = useContext(AppContext);
@@ -52,25 +50,20 @@ const Payment = () => {
   const [filterText, setFilterText] = useState("");
   const [resetPaginationToggle, setResetPaginationToggle] = useState(false);
 
-  const fetchPayments = useCallback(
-    async (/* page = 1, limit = 10, search = '' */) => {
-      setLoadingPayments(true);
-      setFetchError(null);
-      try {
-        const responseData = await getPayments(authFetch /*, params */);
-        setPayments(responseData.data || []);
-      } catch (error) {
-        console.error("Error fetching payments:", error);
-        const errorMessage = error.message || "Gagal memuat data pembayaran.";
-        setFetchError(errorMessage);
-        toast.error(errorMessage);
-        setPayments([]);
-      } finally {
-        setLoadingPayments(false);
-      }
-    },
-    [authFetch]
-  );
+  const fetchPayments = useCallback(async () => {
+    setLoadingPayments(true);
+    setFetchError(null);
+    try {
+      const responseData = await getPayments(authFetch);
+      setPayments(responseData.data || []);
+    } catch (error) {
+      const errorMessage = error.message || "Gagal memuat data pembayaran.";
+      setFetchError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoadingPayments(false);
+    }
+  }, [authFetch]);
 
   useEffect(() => {
     document.title = "Manajemen Pembayaran";
@@ -81,34 +74,25 @@ const Payment = () => {
     setSelectedPayment(payment);
     setIsDetailModalOpen(true);
   };
+
+  // --- INI BAGIAN YANG DIPERBAIKI ---
   const closeDetailModal = () => {
     setSelectedPayment(null);
-    setIsDetailModalOpen(false);
+    setIsDetailModalOpen(false); // Pastikan state diubah menjadi false
   };
 
   const filteredPayments = useMemo(
     () =>
-      payments.filter(
-        (payment) =>
-          (payment.order?.order_number &&
-            payment.order.order_number
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (payment.order?.user?.name &&
-            payment.order.user.name
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (payment.transaction_id &&
-            payment.transaction_id
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (payment.status &&
-            payment.status.toLowerCase().includes(filterText.toLowerCase())) ||
-          (payment.payment_type &&
-            payment.payment_type
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) // Filter by payment type
-      ),
+      payments.filter((payment) => {
+        const filter = filterText.toLowerCase();
+        return (
+          payment.order?.order_number?.toLowerCase().includes(filter) ||
+          payment.order?.user?.name?.toLowerCase().includes(filter) ||
+          payment.transaction_id?.toLowerCase().includes(filter) ||
+          payment.status?.replace(/_/g, " ").includes(filter) ||
+          payment.payment_type?.replace(/_/g, " ").includes(filter)
+        );
+      }),
     [payments, filterText]
   );
 
@@ -119,19 +103,14 @@ const Payment = () => {
         setFilterText("");
       }
     };
-    const handleFilterChange = (e) => {
-      const newFilterText = e.target.value;
-      setFilterText(newFilterText);
-    };
-
     return (
       <FilterComponent
-        onFilter={handleFilterChange}
+        onFilter={(e) => setFilterText(e.target.value)}
         onClear={handleClear}
         filterText={filterText}
       />
     );
-  }, [filterText, resetPaginationToggle /*, perPage */]);
+  }, [filterText, resetPaginationToggle]);
 
   const columns = useMemo(
     () => [
@@ -140,24 +119,23 @@ const Payment = () => {
         selector: (row, index) => index + 1,
         width: "60px",
         center: true,
-        sortable: false,
       },
       {
         name: "No. Pesanan",
         selector: (row) => row.order?.order_number ?? "N/A",
         sortable: true,
-        minWidth: "150px",
         wrap: true,
+        minWidth: "160px",
       },
       {
         name: "Pelanggan",
         selector: (row) => row.order?.user?.name ?? "N/A",
         sortable: true,
-        minWidth: "150px",
         wrap: true,
+        minWidth: "180px",
       },
       {
-        name: "Tgl Pembayaran",
+        name: "Tgl Bayar",
         selector: (row) => row.created_at,
         cell: (row) =>
           new Date(row.created_at).toLocaleString("id-ID", {
@@ -166,10 +144,9 @@ const Payment = () => {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
-            hour12: false,
           }),
         sortable: true,
-        minWidth: "130px",
+        minWidth: "150px",
       },
       {
         name: "Jumlah",
@@ -181,14 +158,14 @@ const Payment = () => {
       },
       {
         name: "Metode",
-        selector: (row) => row.payment_type,
+        selector: (row) => row.payment_type?.replace(/_/g, " ") || "N/A",
         sortable: true,
         minWidth: "120px",
       },
       {
         name: "Status",
         selector: (row) => row.status,
-        cell: (row) => <StatusBadge status={row.status} type="payment" />,
+        cell: (row) => <StatusBadge status={row.status} />,
         sortable: true,
         center: true,
         minWidth: "120px",
@@ -199,84 +176,58 @@ const Payment = () => {
           <div className="flex items-center justify-center">
             <button
               onClick={() => openDetailModal(row)}
-              className="rounded p-1.5 text-indigo-600 transition-colors hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
               title="Lihat Detail Pembayaran"
-              aria-label={`Detail Pembayaran ${
-                row.transaction_id || row.order?.order_number
-              }`}
             >
-              <FaEye className="h-4 w-4 md:h-5 md:w-5" />
+              <FaEye className="h-5 w-5" />
             </button>
           </div>
         ),
-        ignoreRowClick: true,
-        allowOverflow: true,
-        button: true,
         center: true,
         minWidth: "80px",
       },
     ],
     []
-  ); // Dependensi kosong
+  );
 
   const customStyles = useMemo(
     () => ({
-      // ... (customStyles tetap sama seperti sebelumnya) ...
-      table: {
+      rows: {
         style: {
-          borderRadius: "0.5rem",
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
+          minHeight: "60px",
+          "&:not(:last-of-type)": { borderBottom: "1px solid #f1f5f9" },
         },
-      },
-      header: {
-        style: {
-          fontSize: "1.125rem",
-          fontWeight: "600",
-          padding: "1rem",
-          backgroundColor: "#f9fafb",
-          borderBottom: "1px solid #e5e7eb",
+        highlightOnHoverStyle: {
+          backgroundColor: "#f8fafc",
+          borderBottomColor: "#f1f5f9",
         },
-      },
-      subHeader: {
-        style: { padding: "1rem 1rem 0.5rem 1rem", backgroundColor: "#ffffff" },
       },
       headRow: {
         style: {
-          backgroundColor: "#f3f4f6",
-          borderBottomWidth: "1px",
-          minHeight: "40px",
+          backgroundColor: "#f8fafc",
+          minHeight: "56px",
+          borderBottom: "1px solid #e2e8f0",
         },
       },
       headCells: {
         style: {
           fontSize: "0.75rem",
           fontWeight: "600",
-          padding: "0.5rem 1rem",
-          color: "#4b5563",
+          color: "#475569",
           textTransform: "uppercase",
-          "&:last-of-type": { justifyContent: "center" },
+          padding: "1rem",
         },
       },
       cells: {
         style: {
           fontSize: "0.875rem",
-          padding: "0.75rem 1rem",
-          color: "#1f2937",
-          borderBottom: "1px solid #f3f4f6",
-          minHeight: "50px",
+          color: "#334155",
+          padding: "1rem",
+          lineHeight: "1.5",
         },
       },
-      pagination: {
-        style: {
-          borderTop: "1px solid #e5e7eb",
-          padding: "0.5rem 1rem",
-          fontSize: "0.875rem",
-        },
-      },
-      noData: {
-        style: { padding: "2rem", textAlign: "center", color: "#6b7280" },
-      },
+      pagination: { style: { borderTop: "1px solid #e2e8f0" } },
+      subHeader: { style: { padding: "1rem" } },
     }),
     []
   );
@@ -285,25 +236,23 @@ const Payment = () => {
     () => ({
       rowsPerPageText: "Baris per halaman:",
       rangeSeparatorText: "dari",
-      selectAllRowsItem: true,
-      selectAllRowsItemText: "Semua",
     }),
     []
   );
 
   return (
-    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900 md:text-3xl">
+    <div className="space-y-6 mt-4">
+      <h1 className="text-3xl font-bold text-slate-800">
         Manajemen Pembayaran
       </h1>
 
-      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
         {loadingPayments ? (
-          <div className="p-6 text-center text-gray-500">
+          <div className="p-10 text-center text-slate-500">
             Memuat data pembayaran...
           </div>
         ) : fetchError ? (
-          <div className="p-6 text-center text-red-500">
+          <div className="p-10 text-center text-red-600">
             Error: {fetchError}. Coba refresh halaman.
           </div>
         ) : (
@@ -311,25 +260,16 @@ const Payment = () => {
             columns={columns}
             data={filteredPayments}
             pagination
-            paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50]}
             paginationComponentOptions={paginationOptions}
             paginationResetDefaultPage={resetPaginationToggle}
-            // Progress & Pagination server-side (opsional)
-            // progressPending={loadingPayments}
-            // paginationServer
-            // paginationTotalRows={totalRows}
-            // onChangeRowsPerPage={handlePerRowsChange}
-            // onChangePage={handlePageChange}
             subHeader
             subHeaderComponent={subHeaderComponent}
             persistTableHead
             responsive
             highlightOnHover
-            striped
             customStyles={customStyles}
             noDataComponent={
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-16 text-center text-slate-500">
                 Tidak ada data pembayaran ditemukan.
               </div>
             }

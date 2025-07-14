@@ -16,15 +16,16 @@ const RatingStars = ({ rating }) => {
   const filledStars = Math.round(rating ?? 0);
   return (
     <div className="flex items-center">
+      {/* --- INI BAGIAN YANG DIPERBAIKI --- */}
       {[...Array(totalStars)].map((_, index) => {
-        const starValue = index + 1;
+        const starValue = index + 1; // Deklarasikan variabel di sini
         return starValue <= filledStars ? (
-          <FaStar key={starValue} className="h-4 w-4 text-yellow-400" />
+          <FaStar key={index} className="h-4 w-4 text-yellow-400" />
         ) : (
-          <FaRegStar key={starValue} className="h-4 w-4 text-gray-300" />
+          <FaRegStar key={index} className="h-4 w-4 text-slate-300" />
         );
       })}
-      <span className="ml-1.5 text-xs text-gray-500">
+      <span className="ml-1.5 text-xs text-slate-500">
         ({rating?.toFixed(1) ?? "N/A"})
       </span>
     </div>
@@ -33,11 +34,11 @@ const RatingStars = ({ rating }) => {
 RatingStars.propTypes = { rating: PropTypes.number };
 
 const DetailItem = ({ label, value }) => (
-  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-    <dt className="text-sm font-medium leading-6 text-gray-500">{label}</dt>
+  <div className="py-3 grid grid-cols-3 gap-4">
+    <dt className="text-sm font-medium text-slate-500">{label}</dt>
     <dd
-      className={`mt-1 text-sm leading-6 text-gray-800 sm:col-span-2 sm:mt-0 ${
-        label === "Ulasan" ? "whitespace-pre-wrap" : ""
+      className={`col-span-2 text-sm text-slate-800 ${
+        label === "Ulasan" ? "whitespace-pre-wrap" : "break-words"
       }`}
     >
       {value ?? "-"}
@@ -61,94 +62,61 @@ const ReviewDetailModal = ({ isOpen, onClose, reviewId }) => {
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "-";
-    try {
-      return new Date(dateString).toLocaleString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-    } catch (e) {
-      return "Format Tanggal Salah";
-    }
+    return new Date(dateString).toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const fetchDetailsCallback = useCallback(async () => {
     if (!reviewId) return;
     setLoading(true);
     setFetchError(null);
-    setReviewDetail(null);
     try {
       const data = await getReviewDetail(authFetch, reviewId);
       setReviewDetail(data);
     } catch (err) {
-      console.error("Error fetching review detail:", err);
-      const errorMessage = err.message || "Gagal memuat detail ulasan.";
-      setFetchError(errorMessage);
-      toast.error(errorMessage);
+      setFetchError(err.message || "Gagal memuat detail ulasan.");
+      toast.error(err.message || "Gagal memuat detail ulasan.");
     } finally {
       setLoading(false);
     }
   }, [reviewId, authFetch]);
 
   useEffect(() => {
-    if (isOpen && reviewId) {
-      fetchDetailsCallback();
-    }
-    if (!isOpen) {
-      setReviewDetail(null);
-      setLoading(false);
-      setFetchError(null);
-    }
-  }, [isOpen, reviewId, fetchDetailsCallback]);
+    if (isOpen) fetchDetailsCallback();
+  }, [isOpen, fetchDetailsCallback]);
 
   let content;
   if (loading) {
     content = (
-      <div className="flex justify-center items-center py-10">
-        <FaSpinner className="animate-spin text-3xl text-indigo-600" />
-        <span className="ml-3 text-gray-500">Memuat detail ulasan...</span>
+      <div className="flex justify-center items-center py-12">
+        <FaSpinner className="animate-spin text-3xl text-blue-600" />
+        <span className="ml-3 text-slate-500">Memuat detail ulasan...</span>
       </div>
     );
-  } else if (fetchError && !reviewDetail) {
-    // Error saat fetch awal
+  } else if (fetchError) {
     content = (
-      <div className="rounded-md bg-red-50 p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <FaExclamationTriangle
-              className="h-5 w-5 text-red-400"
-              aria-hidden="true"
-            />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">
-              Gagal Memuat Data
-            </h3>
-            <div className="mt-2 text-sm text-red-700">
-              <p>{fetchError}</p>
-            </div>
-            <div className="mt-4">
-              <button
-                onClick={fetchDetailsCallback}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Coba lagi
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="rounded-md bg-red-50 p-4 text-red-700 text-center">
+        <FaExclamationTriangle className="mx-auto h-6 w-6 text-red-500" />
+        <p className="mt-2">{fetchError}</p>
+        <button
+          onClick={fetchDetailsCallback}
+          className="mt-4 text-sm font-medium text-blue-600 hover:underline"
+        >
+          Coba lagi
+        </button>
       </div>
     );
   } else if (reviewDetail) {
     content = (
-      <div className="space-y-4">
-        <dl className="text-sm divide-y divide-gray-100">
+      <div>
+        <dl className="divide-y divide-slate-100">
           <DetailItem label="ID Ulasan" value={reviewDetail.id} />
           <DetailItem label="Pengguna" value={reviewDetail.user?.name} />
-          <DetailItem label="Email Pengguna" value={reviewDetail.user?.email} />
           <DetailItem
             label="Produk"
             value={reviewDetail.product?.product_name}
@@ -165,27 +133,16 @@ const ReviewDetailModal = ({ isOpen, onClose, reviewId }) => {
         </dl>
       </div>
     );
-  } else if (!loading && isOpen) {
-    content = (
-      <div className="py-10 text-center text-gray-500">
-        Gagal memuat data atau ulasan tidak ditemukan.
-      </div>
-    );
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Detail Ulasan Produk"
-      size="2xl"
-    >
-      <div className="min-h-[200px]">{content}</div>
-      <div className="mt-5 flex flex-col-reverse gap-3 border-t border-gray-200 pt-4 sm:mt-6 sm:flex-row sm:justify-between">
+    <Modal isOpen={isOpen} onClose={onClose} title="Detail Ulasan Produk">
+      <div className="min-h-[250px]">{content}</div>
+      <div className="mt-4 flex justify-end border-t border-slate-200 pt-4">
         <button
           type="button"
           onClick={onClose}
-          className="w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 sm:w-auto"
+          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
         >
           Tutup
         </button>
@@ -198,7 +155,6 @@ ReviewDetailModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   reviewId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onSuccess: PropTypes.func, // Callback setelah delete (opsional)
 };
 
 export default ReviewDetailModal;

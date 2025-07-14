@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useContext } from "react";
 import PropTypes from "prop-types";
 import { FiChevronDown, FiUser, FiLogOut, FiMenu } from "react-icons/fi";
-import { assets } from "../assets/assets";
 import { Link } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 
@@ -23,64 +22,47 @@ const Navbar = ({ setIsSidebarOpen }) => {
   const userName = user?.name || "Admin";
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-indigo-700 shadow-lg h-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-        <div className="flex items-center">
-          <button
-            onClick={() => setIsSidebarOpen((prev) => !prev)}
-            className="md:hidden mr-3 p-2 rounded-md text-red-400 hover:text-red-300 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500" // Focus ring merah
-            aria-label="Toggle sidebar"
-          >
-            <FiMenu className="w-6 h-6" />
-          </button>
-
-          {/* Logo */}
-          <Link to="/" className="flex-shrink-0 flex items-center">
-            <img
-              src={assets.as_denim_logo}
-              alt="Logo Perusahaan"
-              className="h-8 w-auto"
-            />
-            {/* <span className="text-white font-bold ml-2 text-xl hidden sm:block">AS Denim</span> */}
-          </Link>
-        </div>
+    <nav className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-slate-200 h-16 md:left-64">
+      <div className="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between md:justify-end">
+        <button
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          className="md:hidden p-2 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Toggle sidebar"
+        >
+          <FiMenu className="w-6 h-6" />
+        </button>
 
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 text-sm font-medium text-indigo-100 hover:text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-indigo-900 focus:ring-white rounded-full p-1 pr-2"
+            className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-full p-1 pr-2"
             aria-haspopup="true"
             aria-expanded={dropdownOpen}
           >
-            <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-600 text-white font-semibold ring-2 ring-white">
+            <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white font-semibold ring-2 ring-white">
               {userName.charAt(0).toUpperCase()}
             </span>
             <span className="hidden sm:inline">{userName}</span>
             <FiChevronDown
-              className={`w-5 h-5 transition-transform duration-200 ${
+              className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${
                 dropdownOpen ? "transform rotate-180" : ""
               }`}
             />
           </button>
 
-          {/* Konten Dropdown */}
           {dropdownOpen && (
             <div
-              className="absolute right-0 mt-2 w-48 bg-indigo-800 rounded-md shadow-xl ring-1 ring-black ring-opacity-5 overflow-hidden origin-top-right"
+              className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden origin-top-right"
               role="menu"
-              aria-orientation="vertical"
             >
               <div className="py-1" role="none">
                 <Link
                   to="/profile"
                   onClick={() => setDropdownOpen(false)}
-                  className="flex items-center w-full px-4 py-2 text-sm text-indigo-100 hover:bg-indigo-600 hover:text-white"
+                  className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
                   role="menuitem"
                 >
-                  <FiUser
-                    className="mr-3 h-5 w-5 text-indigo-300"
-                    aria-hidden="true"
-                  />
+                  <FiUser className="mr-3 h-5 w-5 text-slate-400" />
                   Profil
                 </Link>
                 <button
@@ -88,13 +70,10 @@ const Navbar = ({ setIsSidebarOpen }) => {
                     handleLogout();
                     setDropdownOpen(false);
                   }}
-                  className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-red-600 hover:text-white"
+                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
                   role="menuitem"
                 >
-                  <FiLogOut
-                    className="mr-3 h-5 w-5 text-red-500"
-                    aria-hidden="true"
-                  />
+                  <FiLogOut className="mr-3 h-5 w-5" />
                   Keluar
                 </button>
               </div>

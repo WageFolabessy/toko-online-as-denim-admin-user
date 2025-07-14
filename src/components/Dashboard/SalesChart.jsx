@@ -48,19 +48,19 @@ const SalesChart = ({ startDate, endDate }) => {
 
   if (isLoading) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-gray-500">
+      <div className="flex h-[300px] items-center justify-center text-slate-500">
         <FaSpinner className="animate-spin mr-2" /> Memuat chart...
       </div>
     );
   } else if (error) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-red-700">
-        <FaExclamationTriangle className="mr-2 text-red-500" /> Error: {error}
+      <div className="flex h-[300px] items-center justify-center text-red-600">
+        <FaExclamationTriangle className="mr-2" /> Error: {error}
       </div>
     );
   } else if (data.length === 0) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-indigo-800 opacity-75">
+      <div className="flex h-[300px] items-center justify-center text-slate-500">
         Tidak ada data penjualan untuk periode ini.
       </div>
     );
@@ -69,43 +69,42 @@ const SalesChart = ({ startDate, endDate }) => {
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
           data={data}
-          margin={{ top: 5, right: 5, bottom: 5, left: 50 }}
+          margin={{ top: 5, right: 5, bottom: 5, left: 20 }}
         >
           <CartesianGrid
-            stroke="#c7d2fe"
+            stroke="#e2e8f0"
             strokeDasharray="3 3"
             vertical={false}
           />
-          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+          <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#64748b" }} />
           <YAxis
             tickFormatter={formatCurrencyAxis}
-            tick={{ fontSize: 11, fill: "#9ca3af" }}
-            width={80}
+            tick={{ fontSize: 12, fill: "#64748b" }}
           />
           <Tooltip
             formatter={(value) => [formatCurrencyTooltip(value), "Penjualan"]}
             labelFormatter={(label) => `Periode: ${label}`}
             contentStyle={{
               fontSize: 12,
-              borderRadius: "0.375rem",
+              borderRadius: "0.5rem",
               boxShadow: "rgba(0, 0, 0, 0.1) 0px 4px 12px",
-              background: "rgba(255, 255, 255, 0.9)",
-              borderColor: "#c7d2fe",
+              background: "rgba(255, 255, 255, 0.95)",
+              borderColor: "#e2e8f0",
             }}
             itemStyle={{ padding: "2px 0" }}
-            cursor={{ stroke: "rgba(99, 102, 241, 0.3)", strokeWidth: 1 }}
+            cursor={{ stroke: "rgba(59, 130, 246, 0.2)", strokeWidth: 1 }}
           />
           <Line
             type="monotone"
             dataKey="value"
             name="Penjualan"
-            stroke="#6366f1"
+            stroke="#2563eb"
             strokeWidth={2}
             dot={false}
             activeDot={{
               r: 6,
-              fill: "#4338ca",
-              stroke: "#c7d2fe",
+              fill: "#1d4ed8",
+              stroke: "#bfdbfe",
               strokeWidth: 2,
             }}
           />
@@ -116,8 +115,8 @@ const SalesChart = ({ startDate, endDate }) => {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-indigo-900 mb-4">
-        Total Penjualan per Bulan
+      <h2 className="text-lg font-semibold text-slate-800 mb-4">
+        Grafik Penjualan
       </h2>
       {content}
     </div>

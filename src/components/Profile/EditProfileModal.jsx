@@ -29,11 +29,6 @@ const EditProfileModal = ({ isOpen, onClose, admin, onSuccess }) => {
       });
       setErrors({});
     }
-    if (!isOpen) {
-      setFormData(initialFormData);
-      setErrors({});
-      setLoading(false);
-    }
   }, [admin, isOpen]);
 
   const handleChange = (e) => {
@@ -41,15 +36,6 @@ const EditProfileModal = ({ isOpen, onClose, admin, onSuccess }) => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
     if (errors[name]) {
       setErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
-    }
-    if (name === "password" && errors.password_confirmation) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        password_confirmation: undefined,
-      }));
-    }
-    if (errors.message) {
-      setErrors((prevErrors) => ({ ...prevErrors, message: undefined }));
     }
   };
 
@@ -69,57 +55,45 @@ const EditProfileModal = ({ isOpen, onClose, admin, onSuccess }) => {
 
     try {
       const result = await updateOwnAdminProfile(authFetch, payload);
-
       toast.success(result.message || "Profil berhasil diperbarui.");
-
       if (result.user) {
         setContextUser(result.user);
       }
-
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error updating profile:", error);
       const errorMessage = error.message || "Terjadi kesalahan.";
-
       if (error.status === 422 && error.errors) {
-        setErrors(
-          Object.keys(error.errors).reduce((acc, key) => {
-            const frontendKey =
-              key === "password_confirmation" ? "confirmPassword" : key;
-            acc[frontendKey] = error.errors[key][0];
-            return acc;
-          }, {})
-        );
+        setErrors(error.errors);
         toast.error("Data yang dimasukkan tidak valid.");
       } else {
         setErrors({ message: errorMessage });
-        const backendMessage = error?.data?.message;
-        toast.error(
-          `Gagal memperbarui profil: ${backendMessage || errorMessage}`
-        );
+        toast.error(`Gagal memperbarui profil: ${errorMessage}`);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isOpen || !admin) {
-    return null;
-  }
+  const handleClose = () => {
+    if (!loading) {
+      onClose();
+    }
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Profil Admin">
-      <form onSubmit={handleSubmit} noValidate>
+    <Modal isOpen={isOpen} onClose={handleClose} title="Edit Profil Admin">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {errors.message && (
-          <div className="mb-4 rounded bg-red-100 p-3 text-center text-sm text-red-700">
+          <div className="rounded bg-red-50 p-3 text-center text-sm text-red-700">
             {errors.message}
           </div>
         )}
-        <div className="mb-4">
+        <div>
           <label
             htmlFor={`profile-name-${admin.id}`}
-            className="mb-1.5 block text-sm font-medium text-gray-700"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
           >
             Nama Lengkap
           </label>
@@ -130,30 +104,21 @@ const EditProfileModal = ({ isOpen, onClose, admin, onSuccess }) => {
             value={formData.name}
             onChange={handleChange}
             required
-            aria-invalid={!!errors.name}
-            aria-describedby={
-              errors.name ? `profile-name-error-${admin.id}` : undefined
-            }
             className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
               errors.name
                 ? "border-red-500 focus:ring-red-500"
-                : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                : "border-slate-300 focus:ring-blue-500 bg-slate-50"
             }`}
           />
           {errors.name && (
-            <p
-              id={`profile-name-error-${admin.id}`}
-              className="mt-1 text-xs text-red-600"
-            >
-              {errors.name}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{errors.name[0]}</p>
           )}
         </div>
 
-        <div className="mb-4">
+        <div>
           <label
             htmlFor={`profile-email-${admin.id}`}
-            className="mb-1.5 block text-sm font-medium text-gray-700"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
           >
             Email
           </label>
@@ -164,30 +129,21 @@ const EditProfileModal = ({ isOpen, onClose, admin, onSuccess }) => {
             value={formData.email}
             onChange={handleChange}
             required
-            aria-invalid={!!errors.email}
-            aria-describedby={
-              errors.email ? `profile-email-error-${admin.id}` : undefined
-            }
             className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
               errors.email
                 ? "border-red-500 focus:ring-red-500"
-                : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                : "border-slate-300 focus:ring-blue-500 bg-slate-50"
             }`}
           />
           {errors.email && (
-            <p
-              id={`profile-email-error-${admin.id}`}
-              className="mt-1 text-xs text-red-600"
-            >
-              {errors.email}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{errors.email[0]}</p>
           )}
         </div>
 
-        <div className="mb-4">
+        <div>
           <label
             htmlFor={`profile-password-${admin.id}`}
-            className="mb-1.5 block text-sm font-medium text-gray-700"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
           >
             Password Baru (Opsional)
           </label>
@@ -198,71 +154,52 @@ const EditProfileModal = ({ isOpen, onClose, admin, onSuccess }) => {
             value={formData.password}
             onChange={handleChange}
             placeholder="Kosongkan jika tidak ingin mengubah"
-            aria-invalid={!!errors.password}
-            aria-describedby={
-              errors.password ? `profile-password-error-${admin.id}` : undefined
-            }
             className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
               errors.password
                 ? "border-red-500 focus:ring-red-500"
-                : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                : "border-slate-300 focus:ring-blue-500 bg-slate-50"
             }`}
           />
           {errors.password && (
-            <p
-              id={`profile-password-error-${admin.id}`}
-              className="mt-1 text-xs text-red-600"
-            >
-              {errors.password}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{errors.password[0]}</p>
           )}
         </div>
 
-        <div className="mb-6">
+        <div>
           <label
             htmlFor={`profile-confirmPassword-${admin.id}`}
-            className="mb-1.5 block text-sm font-medium text-gray-700"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
           >
             Konfirmasi Password Baru
           </label>
           <input
             type="password"
             id={`profile-confirmPassword-${admin.id}`}
-            name="password_confirmation" // Gunakan nama field backend
+            name="password_confirmation"
             value={formData.password_confirmation}
             onChange={handleChange}
-            // Wajib jika password diisi
             required={!!formData.password}
-            disabled={!formData.password} // Disable jika password kosong
+            disabled={!formData.password}
             placeholder="Ulangi password baru"
-            aria-invalid={!!errors.confirmPassword}
-            aria-describedby={
-              errors.confirmPassword
-                ? `profile-confirmPassword-error-${admin.id}`
-                : undefined
-            }
-            className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-              errors.confirmPassword
+            className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 disabled:bg-slate-200 disabled:cursor-not-allowed ${
+              errors.password_confirmation
                 ? "border-red-500 focus:ring-red-500"
-                : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                : "border-slate-300 focus:ring-blue-500 bg-slate-50"
             }`}
           />
-          {errors.confirmPassword && (
-            <p
-              id={`profile-confirmPassword-error-${admin.id}`}
-              className="mt-1 text-xs text-red-600"
-            >
-              {errors.confirmPassword}
+          {errors.password_confirmation && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.password_confirmation[0]}
             </p>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+        <div className="flex justify-end gap-3 border-t border-slate-200 pt-4 mt-6">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
             Batal
           </button>
@@ -271,8 +208,8 @@ const EditProfileModal = ({ isOpen, onClose, admin, onSuccess }) => {
             disabled={loading}
             className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               loading
-                ? "cursor-not-allowed bg-indigo-400"
-                : "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+                ? "cursor-not-allowed bg-blue-400"
+                : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
             }`}
           >
             {loading ? "Menyimpan..." : "Simpan Perubahan"}

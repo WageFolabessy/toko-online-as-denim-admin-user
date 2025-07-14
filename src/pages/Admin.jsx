@@ -28,7 +28,6 @@ const Admin = () => {
       const adminsData = await getAdmins(authFetch);
       setAdmins(adminsData);
     } catch (error) {
-      console.error("Error fetching admins:", error);
       toast.error(error.message || "Gagal memuat data admin.");
       setAdmins([]);
     } finally {
@@ -41,6 +40,8 @@ const Admin = () => {
     fetchAdmins();
   }, [fetchAdmins]);
 
+  const handleSuccess = () => fetchAdmins();
+
   const openAddModal = () => setIsAddModalOpen(true);
   const closeAddModal = () => setIsAddModalOpen(false);
 
@@ -48,32 +49,19 @@ const Admin = () => {
     setSelectedAdmin(admin);
     setIsEditModalOpen(true);
   };
-  const closeEditModal = () => {
-    setSelectedAdmin(null);
-    setIsEditModalOpen(false);
-  };
+  const closeEditModal = () => setIsEditModalOpen(false);
 
   const openViewModal = (admin) => {
     setSelectedAdmin(admin);
     setIsViewModalOpen(true);
   };
-  const closeViewModal = () => {
-    setSelectedAdmin(null);
-    setIsViewModalOpen(false);
-  };
+  const closeViewModal = () => setIsViewModalOpen(false);
 
   const openDeleteModal = (admin) => {
     setSelectedAdmin(admin);
     setIsDeleteModalOpen(true);
   };
-  const closeDeleteModal = () => {
-    setSelectedAdmin(null);
-    setIsDeleteModalOpen(false);
-  };
-
-  const handleSuccess = () => {
-    fetchAdmins();
-  };
+  const closeDeleteModal = () => setIsDeleteModalOpen(false);
 
   const filteredAdmins = admins.filter(
     (admin) =>
@@ -106,19 +94,18 @@ const Admin = () => {
         selector: (row, index) => index + 1,
         width: "60px",
         center: true,
-        sortable: false,
       },
       {
         name: "Nama",
         selector: (row) => row.name,
         sortable: true,
-        minWidth: "150px",
+        minWidth: "200px",
       },
       {
         name: "Email",
         selector: (row) => row.email,
         sortable: true,
-        minWidth: "200px",
+        minWidth: "250px",
       },
       {
         name: "Tanggal Dibuat",
@@ -128,47 +115,37 @@ const Admin = () => {
             day: "2-digit",
             month: "short",
             year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
           }),
         sortable: true,
-        wrap: true,
-        minWidth: "170px",
+        minWidth: "150px",
       },
       {
         name: "Aksi",
         cell: (row) => (
-          <div className="flex items-center justify-center gap-2 md:gap-3">
+          <div className="flex items-center justify-center gap-1">
             <button
               onClick={() => openViewModal(row)}
-              className="rounded-lg p-1.5 text-green-600 transition-colors hover:bg-green-100"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100"
               title="Lihat Detail"
-              aria-label={`Lihat detail ${row.name}`}
             >
-              <FaEye className="text-base md:text-lg" />
+              <FaEye className="h-5 w-5" />
             </button>
             <button
               onClick={() => openEditModal(row)}
-              className="rounded-lg p-1.5 text-blue-600 transition-colors hover:bg-blue-100"
+              className="rounded-md p-2 text-blue-600 transition-colors hover:bg-blue-100"
               title="Edit"
-              aria-label={`Edit ${row.name}`}
             >
-              <FaEdit className="text-base md:text-lg" />
+              <FaEdit className="h-5 w-5" />
             </button>
             <button
               onClick={() => openDeleteModal(row)}
-              className="rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-100"
+              className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-100"
               title="Hapus"
-              aria-label={`Hapus ${row.name}`}
             >
-              <FaTrash className="text-base md:text-lg" />
+              <FaTrash className="h-5 w-5" />
             </button>
           </div>
         ),
-        ignoreRowClick: true,
-        allowOverflow: true,
-        button: true,
         center: true,
         minWidth: "120px",
       },
@@ -178,55 +155,34 @@ const Admin = () => {
 
   const customStyles = useMemo(
     () => ({
-      table: {
+      rows: {
         style: {
-          borderRadius: "0.5rem",
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
+          minHeight: "60px",
+          "&:not(:last-of-type)": { borderBottom: "1px solid #f1f5f9" },
         },
-      },
-      header: {
-        style: {
-          fontSize: "1.125rem",
-          fontWeight: "600",
-          padding: "1rem",
-          backgroundColor: "#f9fafb",
-          borderBottom: "1px solid #e5e7eb",
-        },
-      },
-      subHeader: {
-        style: { padding: "1rem 1rem 0.5rem 1rem", backgroundColor: "#ffffff" },
+        highlightOnHoverStyle: { backgroundColor: "#f8fafc" },
       },
       headRow: {
-        style: { backgroundColor: "#f3f4f6", borderBottomWidth: "1px" },
+        style: {
+          backgroundColor: "#f8fafc",
+          minHeight: "56px",
+          borderBottom: "1px solid #e2e8f0",
+        },
       },
       headCells: {
         style: {
           fontSize: "0.75rem",
           fontWeight: "600",
-          padding: "0.75rem 1rem",
-          color: "#374151",
+          color: "#475569",
           textTransform: "uppercase",
+          padding: "1rem",
         },
       },
       cells: {
-        style: {
-          fontSize: "0.875rem",
-          padding: "0.75rem 1rem",
-          color: "#1f2937",
-          borderBottom: "1px solid #f3f4f6",
-        },
+        style: { fontSize: "0.875rem", color: "#334155", padding: "1rem" },
       },
-      pagination: {
-        style: {
-          borderTop: "1px solid #e5e7eb",
-          padding: "0.5rem 1rem",
-          fontSize: "0.875rem",
-        },
-      },
-      noData: {
-        style: { padding: "2rem", textAlign: "center", color: "#6b7280" },
-      },
+      pagination: { style: { borderTop: "1px solid #e2e8f0" } },
+      subHeader: { style: { padding: "1rem" } },
     }),
     []
   );
@@ -235,29 +191,24 @@ const Admin = () => {
     () => ({
       rowsPerPageText: "Baris per halaman:",
       rangeSeparatorText: "dari",
-      selectAllRowsItem: true,
-      selectAllRowsItemText: "Semua",
     }),
     []
   );
 
   return (
-    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8 ">
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
-          Manajemen Admin
-        </h1>
+    <div className="space-y-6 mt-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-3xl font-bold text-slate-800">Manajemen Admin</h1>
         <button
           onClick={openAddModal}
-          className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
         >
-          <FaPlus className="mr-2 h-4 w-4" /> Tambah Admin
+          <FaPlus /> Tambah Admin
         </button>
       </div>
-
-      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
         {loadingAdmins ? (
-          <div className="p-6 text-center text-gray-500">
+          <div className="p-10 text-center text-slate-500">
             Memuat data admin...
           </div>
         ) : (
@@ -265,8 +216,6 @@ const Admin = () => {
             columns={columns}
             data={filteredAdmins}
             pagination
-            paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50]}
             paginationComponentOptions={paginationOptions}
             paginationResetDefaultPage={resetPaginationToggle}
             subHeader
@@ -274,10 +223,9 @@ const Admin = () => {
             persistTableHead
             responsive
             highlightOnHover
-            striped
             customStyles={customStyles}
             noDataComponent={
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-16 text-center text-slate-500">
                 Tidak ada data admin ditemukan.
               </div>
             }

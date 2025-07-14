@@ -1,13 +1,7 @@
 import { useState, useEffect, useMemo, useContext, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import { toast } from "react-toastify";
-import {
-  FaEye,
-  FaStar,
-  FaRegStar,
-  FaSpinner,
-  FaExclamationTriangle,
-} from "react-icons/fa";
+import { FaEye, FaStar, FaRegStar } from "react-icons/fa";
 import PropTypes from "prop-types";
 import ReviewDetailModal from "../components/Review/ReviewDetailModal";
 import FilterComponent from "../components/Review/FilterComponent";
@@ -24,10 +18,10 @@ const RatingStars = ({ rating }) => {
         return starValue <= filledStars ? (
           <FaStar key={starValue} className="h-4 w-4 text-yellow-400" />
         ) : (
-          <FaRegStar key={starValue} className="h-4 w-4 text-gray-300" />
+          <FaRegStar key={starValue} className="h-4 w-4 text-slate-300" />
         );
       })}
-      <span className="ml-1.5 text-xs text-gray-500">
+      <span className="ml-1.5 text-xs text-slate-500">
         ({rating?.toFixed(1) ?? "N/A"})
       </span>
     </div>
@@ -52,11 +46,9 @@ const Review = () => {
       const responseData = await getReviews(authFetch);
       setReviews(responseData.data || []);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
       const errorMessage = error.message || "Gagal memuat data ulasan.";
       setFetchError(errorMessage);
       toast.error(errorMessage);
-      setReviews([]);
     } finally {
       setLoadingReviews(false);
     }
@@ -71,6 +63,8 @@ const Review = () => {
     setSelectedReview(review);
     setIsDetailModalOpen(true);
   };
+
+  // --- INI BAGIAN YANG DIPERBAIKI ---
   const closeDetailModal = () => {
     setSelectedReview(null);
     setIsDetailModalOpen(false);
@@ -78,19 +72,14 @@ const Review = () => {
 
   const filteredReviews = useMemo(
     () =>
-      reviews.filter(
-        (review) =>
-          (review.user?.name &&
-            review.user.name
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (review.product?.product_name &&
-            review.product.product_name
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (review.review &&
-            review.review.toLowerCase().includes(filterText.toLowerCase()))
-      ),
+      reviews.filter((review) => {
+        const filter = filterText.toLowerCase();
+        return (
+          review.user?.name?.toLowerCase().includes(filter) ||
+          review.product?.product_name?.toLowerCase().includes(filter) ||
+          review.review?.toLowerCase().includes(filter)
+        );
+      }),
     [reviews, filterText]
   );
 
@@ -101,13 +90,9 @@ const Review = () => {
         setFilterText("");
       }
     };
-    const handleFilterChange = (e) => {
-      setFilterText(e.target.value);
-    };
-
     return (
       <FilterComponent
-        onFilter={handleFilterChange}
+        onFilter={(e) => setFilterText(e.target.value)}
         onClear={handleClear}
         filterText={filterText}
       />
@@ -121,21 +106,20 @@ const Review = () => {
         selector: (row, index) => index + 1,
         width: "60px",
         center: true,
-        sortable: false,
       },
       {
         name: "Pengguna",
         selector: (row) => row.user?.name ?? "N/A",
         sortable: true,
-        minWidth: "150px",
         wrap: true,
+        minWidth: "160px",
       },
       {
         name: "Produk",
         selector: (row) => row.product?.product_name ?? "Produk Dihapus",
         sortable: true,
-        minWidth: "180px",
         wrap: true,
+        minWidth: "200px",
       },
       {
         name: "Rating",
@@ -143,17 +127,17 @@ const Review = () => {
         cell: (row) => <RatingStars rating={row.rating} />,
         sortable: true,
         center: true,
-        minWidth: "120px",
+        minWidth: "140px",
       },
       {
         name: "Ulasan",
         selector: (row) => row.review,
         cell: (row) => (
-          <div className="text-xs w-full whitespace-normal" title={row.review}>
+          <div className="text-sm w-full whitespace-normal" title={row.review}>
             {row.review || "-"}
           </div>
         ),
-        minWidth: "250px",
+        minWidth: "300px",
         wrap: true,
       },
       {
@@ -164,12 +148,9 @@ const Review = () => {
             day: "2-digit",
             month: "short",
             year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
           }),
         sortable: true,
-        minWidth: "130px",
+        minWidth: "120px",
       },
       {
         name: "Aksi",
@@ -177,19 +158,13 @@ const Review = () => {
           <div className="flex items-center justify-center">
             <button
               onClick={() => openDetailModal(row)}
-              className="rounded p-1.5 text-indigo-600 transition-colors hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
               title="Lihat Detail Ulasan"
-              aria-label={`Detail Ulasan untuk ${
-                row.product?.product_name || ""
-              }`}
             >
-              <FaEye className="h-4 w-4 md:h-5 md:w-5" />
+              <FaEye className="h-5 w-5" />
             </button>
           </div>
         ),
-        ignoreRowClick: true,
-        allowOverflow: true,
-        button: true,
         center: true,
         minWidth: "80px",
       },
@@ -199,67 +174,43 @@ const Review = () => {
 
   const customStyles = useMemo(
     () => ({
-      table: {
+      rows: {
         style: {
-          borderRadius: "0.5rem",
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
+          minHeight: "60px",
+          "&:not(:last-of-type)": { borderBottom: "1px solid #f1f5f9" },
+        },
+        highlightOnHoverStyle: {
+          backgroundColor: "#f8fafc",
+          borderBottomColor: "#f1f5f9",
         },
       },
-      header: {
-        style: {
-          fontSize: "1.125rem",
-          fontWeight: "600",
-          padding: "1rem",
-          backgroundColor: "#f9fafb",
-          borderBottom: "1px solid #e5e7eb",
-        },
-      },
-      subHeader: {
-        style: {
-          padding: "1rem 1rem 0.5rem 1rem",
-          backgroundColor: "#ffffff",
-          borderTopLeftRadius: "0.5rem",
-          borderTopRightRadius: "0.5rem",
-        },
-      }, // Style subHeader
       headRow: {
         style: {
-          backgroundColor: "#f3f4f6",
-          borderBottomWidth: "1px",
-          minHeight: "40px",
+          backgroundColor: "#f8fafc",
+          minHeight: "56px",
+          borderBottom: "1px solid #e2e8f0",
         },
       },
       headCells: {
         style: {
           fontSize: "0.75rem",
           fontWeight: "600",
-          padding: "0.5rem 1rem",
-          color: "#4b5563",
+          color: "#475569",
           textTransform: "uppercase",
-          "&:last-of-type": { justifyContent: "center" },
+          padding: "1rem",
         },
       },
       cells: {
         style: {
           fontSize: "0.875rem",
-          padding: "0.75rem 1rem",
-          color: "#1f2937",
-          borderBottom: "1px solid #f3f4f6",
-          minHeight: "50px",
-          alignItems: "center",
-        },
-      }, // Align items center
-      pagination: {
-        style: {
-          borderTop: "1px solid #e5e7eb",
-          padding: "0.5rem 1rem",
-          fontSize: "0.875rem",
+          color: "#334155",
+          padding: "1rem",
+          lineHeight: "1.5",
+          alignItems: "flex-start",
         },
       },
-      noData: {
-        style: { padding: "2rem", textAlign: "center", color: "#6b7280" },
-      },
+      pagination: { style: { borderTop: "1px solid #e2e8f0" } },
+      subHeader: { style: { padding: "1rem" } },
     }),
     []
   );
@@ -268,60 +219,29 @@ const Review = () => {
     () => ({
       rowsPerPageText: "Baris per halaman:",
       rangeSeparatorText: "dari",
-      selectAllRowsItem: true,
-      selectAllRowsItemText: "Semua",
     }),
     []
   );
 
   return (
-    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
-          Manajemen Ulasan Produk
-        </h1>
-      </div>
-
-      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
+    <div className="space-y-6 mt-4">
+      <h1 className="text-3xl font-bold text-slate-800">
+        Manajemen Ulasan Produk
+      </h1>
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
         {loadingReviews ? (
-          <div className="flex items-center justify-center p-10 text-gray-500">
-            <FaSpinner className="animate-spin mr-3 text-xl" /> Memuat data
-            ulasan...
+          <div className="p-10 text-center text-slate-500">
+            Memuat data ulasan...
           </div>
         ) : fetchError ? (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <FaExclamationTriangle
-                  className="h-5 w-5 text-red-400"
-                  aria-hidden="true"
-                />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Gagal Memuat Data
-                </h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{fetchError}</p>
-                </div>
-                <div className="mt-4">
-                  <button
-                    onClick={fetchReviews}
-                    className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                  >
-                    Coba lagi
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="p-10 text-center text-red-600">
+            Error: {fetchError}. Coba refresh halaman.
           </div>
         ) : (
           <DataTable
             columns={columns}
             data={filteredReviews}
             pagination
-            paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50]}
             paginationComponentOptions={paginationOptions}
             paginationResetDefaultPage={resetPaginationToggle}
             subHeader
@@ -329,18 +249,15 @@ const Review = () => {
             persistTableHead
             responsive
             highlightOnHover
-            striped
             customStyles={customStyles}
             noDataComponent={
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-16 text-center text-slate-500">
                 Tidak ada data ulasan ditemukan.
               </div>
             }
           />
         )}
       </div>
-
-      {/* Modal Detail Ulasan */}
       <ReviewDetailModal
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}

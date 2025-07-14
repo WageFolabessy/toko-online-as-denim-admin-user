@@ -13,7 +13,7 @@ import { getCategories } from "../services/categoryApi";
 const Category = () => {
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [fetchError, setFetchError] = useState(null); // State error spesifik
+  const [fetchError, setFetchError] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -34,14 +34,13 @@ const Category = () => {
       const errorMessage = error.message || "Gagal memuat data kategori.";
       setFetchError(errorMessage);
       toast.error(errorMessage);
-      setCategories([]);
     } finally {
       setLoadingCategories(false);
     }
   }, [authFetch]);
 
   useEffect(() => {
-    document.title = "Manajemen Kategori Produk";
+    document.title = "Manajemen Kategori";
     fetchCategories();
   }, [fetchCategories]);
 
@@ -56,28 +55,19 @@ const Category = () => {
     setSelectedCategory(category);
     setIsEditModalOpen(true);
   };
-  const closeEditModal = () => {
-    setSelectedCategory(null);
-    setIsEditModalOpen(false);
-  };
+  const closeEditModal = () => setIsEditModalOpen(false);
 
   const openViewModal = (category) => {
     setSelectedCategory(category);
     setIsViewModalOpen(true);
   };
-  const closeViewModal = () => {
-    setSelectedCategory(null);
-    setIsViewModalOpen(false);
-  };
+  const closeViewModal = () => setIsViewModalOpen(false);
 
   const openDeleteModal = (category) => {
     setSelectedCategory(category);
     setIsDeleteModalOpen(true);
   };
-  const closeDeleteModal = () => {
-    setSelectedCategory(null);
-    setIsDeleteModalOpen(false);
-  };
+  const closeDeleteModal = () => setIsDeleteModalOpen(false);
 
   const filteredCategories = categories.filter(
     (item) =>
@@ -108,7 +98,6 @@ const Category = () => {
         selector: (row, index) => index + 1,
         width: "60px",
         center: true,
-        sortable: false,
       },
       {
         name: "Gambar",
@@ -117,16 +106,16 @@ const Category = () => {
             <img
               src={row.image_url}
               alt={row.category_name || "Gambar Kategori"}
-              className="h-12 w-12 rounded object-cover shadow-sm md:h-16 md:w-16"
+              className="h-14 w-14 rounded-md object-cover"
               loading="lazy"
             />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded bg-gray-100 text-xs text-gray-400 md:h-16 md:w-16">
+            <div className="flex h-14 w-14 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
               No Img
             </div>
           ),
         center: true,
-        width: "120px",
+        width: "100px",
       },
       {
         name: "Nama Kategori",
@@ -145,7 +134,6 @@ const Category = () => {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
-            hour12: false,
           }),
         sortable: true,
         wrap: true,
@@ -154,30 +142,27 @@ const Category = () => {
       {
         name: "Aksi",
         cell: (row) => (
-          <div className="flex items-center justify-center gap-1 md:gap-2">
+          <div className="flex items-center justify-center gap-1">
             <button
               onClick={() => openViewModal(row)}
-              className="rounded p-1.5 text-green-600 transition-colors hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
               title="Lihat Detail"
-              aria-label={`Lihat detail ${row.category_name}`}
             >
-              <FaEye className="h-4 w-4 md:h-5 md:w-5" />
+              <FaEye className="h-4 w-4" />
             </button>
             <button
               onClick={() => openEditModal(row)}
-              className="rounded p-1.5 text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-md p-2 text-blue-600 transition-colors hover:bg-blue-100"
               title="Edit"
-              aria-label={`Edit ${row.category_name}`}
             >
-              <FaEdit className="h-4 w-4 md:h-5 md:w-5" />
+              <FaEdit className="h-4 w-4" />
             </button>
             <button
               onClick={() => openDeleteModal(row)}
-              className="rounded p-1.5 text-red-600 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-100"
               title="Hapus"
-              aria-label={`Hapus ${row.category_name}`}
             >
-              <FaTrash className="h-4 w-4 md:h-5 md:w-5" />
+              <FaTrash className="h-4 w-4" />
             </button>
           </div>
         ),
@@ -189,63 +174,62 @@ const Category = () => {
       },
     ],
     []
-  ); // Kosongkan dependensi useMemo jika kolom statis
+  );
 
   const customStyles = useMemo(
     () => ({
-      table: {
+      rows: {
         style: {
-          borderRadius: "0.5rem",
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
+          minHeight: "72px",
+          "&:not(:last-of-type)": {
+            borderBottomStyle: "solid",
+            borderBottomWidth: "1px",
+            borderBottomColor: "#f1f5f9", // slate-100
+          },
         },
-      },
-      header: {
-        style: {
-          fontSize: "1.125rem",
-          fontWeight: "600",
-          padding: "1rem",
-          backgroundColor: "#f9fafb",
-          borderBottom: "1px solid #e5e7eb",
+        highlightOnHoverStyle: {
+          backgroundColor: "#f8fafc", // slate-50
+          borderBottomColor: "#f1f5f9",
         },
-      },
-      subHeader: {
-        style: { padding: "1rem 1rem 0.5rem 1rem", backgroundColor: "#ffffff" },
       },
       headRow: {
         style: {
-          backgroundColor: "#f3f4f6",
+          backgroundColor: "#f8fafc", // slate-50
+          minHeight: "56px",
+          borderBottomStyle: "solid",
           borderBottomWidth: "1px",
-          minHeight: "40px",
+          borderBottomColor: "#e2e8f0", // slate-200
         },
-      }, // Tinggi header
+      },
       headCells: {
         style: {
           fontSize: "0.75rem",
           fontWeight: "600",
-          padding: "0.5rem 1rem",
-          color: "#4b5563",
+          color: "#475569", // slate-600
           textTransform: "uppercase",
+          paddingLeft: "1rem",
+          paddingRight: "1rem",
         },
-      }, // Padding header
+      },
       cells: {
         style: {
           fontSize: "0.875rem",
-          padding: "0.75rem 1rem",
-          color: "#1f2937",
-          borderBottom: "1px solid #f3f4f6",
-          minHeight: "60px",
-        },
-      }, // Tinggi cell
-      pagination: {
-        style: {
-          borderTop: "1px solid #e5e7eb",
-          padding: "0.5rem 1rem",
-          fontSize: "0.875rem",
+          color: "#334155", // slate-700
+          padding: "1rem",
+          lineHeight: "1.5",
         },
       },
-      noData: {
-        style: { padding: "2rem", textAlign: "center", color: "#6b7280" },
+      pagination: {
+        style: {
+          borderTopStyle: "solid",
+          borderTopWidth: "1px",
+          borderTopColor: "#e2e8f0", // slate-200
+        },
+      },
+      subHeader: {
+        style: {
+          padding: "1rem",
+        },
       },
     }),
     []
@@ -255,33 +239,31 @@ const Category = () => {
     () => ({
       rowsPerPageText: "Baris per halaman:",
       rangeSeparatorText: "dari",
-      selectAllRowsItem: true,
-      selectAllRowsItemText: "Semua",
     }),
     []
   );
 
   return (
-    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+    <div className="space-y-6 mt-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <h1 className="text-3xl font-bold text-slate-800">
           Manajemen Kategori
         </h1>
         <button
           onClick={openAddModal}
-          className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
-          <FaPlus className="mr-2 h-4 w-4" /> Tambah Kategori
+          <FaPlus /> Tambah Kategori
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
         {loadingCategories ? (
-          <div className="p-6 text-center text-gray-500">
+          <div className="p-10 text-center text-slate-500">
             Memuat data kategori...
           </div>
         ) : fetchError ? (
-          <div className="p-6 text-center text-red-500">
+          <div className="p-10 text-center text-red-600">
             Error: {fetchError}. Coba refresh halaman.
           </div>
         ) : (
@@ -289,8 +271,6 @@ const Category = () => {
             columns={columns}
             data={filteredCategories}
             pagination
-            paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50]}
             paginationComponentOptions={paginationOptions}
             paginationResetDefaultPage={resetPaginationToggle}
             subHeader
@@ -298,10 +278,9 @@ const Category = () => {
             persistTableHead
             responsive
             highlightOnHover
-            striped
             customStyles={customStyles}
             noDataComponent={
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-16 text-center text-slate-500">
                 Tidak ada data kategori ditemukan.
               </div>
             }

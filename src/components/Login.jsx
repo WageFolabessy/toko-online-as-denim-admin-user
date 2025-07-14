@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AppContext } from "../context/AppContext";
 import { loginAdmin } from "../services/authApi";
+import { assets } from "../assets/assets"; // Pastikan path ini benar
 
 const Login = () => {
   const { token, setToken, setUser } = useContext(AppContext);
@@ -28,35 +29,23 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors({}); // Reset errors
-
+    setErrors({});
     if (!email || !password) {
-      toast.warning("Email dan password wajib diisi.");
+      toast.warn("Email dan password wajib diisi.");
       return;
     }
-
     setLoading(true);
     try {
       const data = await loginAdmin(email, password);
-
       setToken(data.token);
       setUser(data.user);
-      toast.success(data.message || "Login berhasil");
+      toast.success(data.message || "Login berhasil!");
       navigate("/");
     } catch (error) {
-      console.error("Login error:", error);
       const errorMessage = error.message || "Terjadi kesalahan.";
       if (error.status === 422 && error.errors) {
-        setErrors(
-          Object.keys(error.errors).reduce((acc, key) => {
-            acc[key] = error.errors[key][0];
-            return acc;
-          }, {})
-        );
+        setErrors(error.errors);
         toast.error("Data yang dimasukkan tidak valid.");
-      } else if (error.status === 401) {
-        setErrors({ message: errorMessage });
-        toast.error(errorMessage);
       } else {
         setErrors({ message: errorMessage });
         toast.error(errorMessage);
@@ -67,21 +56,32 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-red-700 px-4">
-      <div className="w-full max-w-md rounded-lg bg-indigo-700 p-8 shadow-xl">
-        <h1 className="mb-6 text-center text-3xl font-bold text-red-500">
-          Admin Panel Login
-        </h1>
-        <form onSubmit={handleSubmit} noValidate>
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-white p-8 shadow-lg border border-slate-200">
+        <div className="text-center mb-8">
+          <img
+            src={assets.as_denim_logo}
+            alt="Logo"
+            className="mx-auto h-12 w-auto"
+          />
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-800">
+            Admin Panel Login
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Selamat datang kembali, silakan masuk.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {errors.message && (
-            <div className="mb-4 rounded bg-red-100 p-3 text-center text-sm text-red-700">
+            <div className="rounded-md bg-red-50 p-3 text-center text-sm font-medium text-red-700">
               {errors.message}
             </div>
           )}
-          <div className="mb-5">
+          <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-red-500"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Alamat Email
             </label>
@@ -92,20 +92,20 @@ const Login = () => {
               value={email}
               onChange={handleInputChange(setEmail)}
               required
-              className={`bg-red-500 text-white w-full rounded-md border px-3 py-2 shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 ${
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.email
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.email && (
-              <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              <p className="mt-1 text-xs text-red-600">{errors.email[0]}</p>
             )}
           </div>
-          <div className="mb-6">
+          <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-red-500"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Kata Sandi
             </label>
@@ -116,14 +116,14 @@ const Login = () => {
               value={password}
               onChange={handleInputChange(setPassword)}
               required
-              className={`bg-red-500 text-white w-full rounded-md border px-3 py-2 shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 ${
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.password
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+              <p className="mt-1 text-xs text-red-600">{errors.password[0]}</p>
             )}
           </div>
           <button
@@ -131,8 +131,8 @@ const Login = () => {
             disabled={loading}
             className={`w-full rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               loading
-                ? "cursor-not-allowed bg-indigo-400"
-                : "bg-indigo-600 hover:bg-red-500 focus:ring-indigo-500"
+                ? "cursor-not-allowed bg-blue-400"
+                : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
             }`}
           >
             {loading ? "Memproses..." : "Masuk"}

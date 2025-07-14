@@ -44,19 +44,19 @@ const OrdersChart = ({ startDate, endDate }) => {
 
   if (isLoading) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-gray-500">
+      <div className="flex h-[300px] items-center justify-center text-slate-500">
         <FaSpinner className="animate-spin mr-2" /> Memuat chart...
       </div>
     );
   } else if (error) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-red-700">
-        <FaExclamationTriangle className="mr-2 text-red-500" /> Error: {error}
+      <div className="flex h-[300px] items-center justify-center text-red-600">
+        <FaExclamationTriangle className="mr-2" /> Error: {error}
       </div>
     );
   } else if (data.length === 0) {
     content = (
-      <div className="flex h-[300px] items-center justify-center text-red-800 opacity-75">
+      <div className="flex h-[300px] items-center justify-center text-slate-500">
         Tidak ada data pesanan untuk periode ini.
       </div>
     );
@@ -65,36 +65,35 @@ const OrdersChart = ({ startDate, endDate }) => {
       <ResponsiveContainer width="100%" height={300}>
         <BarChart
           data={data}
-          margin={{ top: 5, right: 0, bottom: 5, left: -10 }}
+          margin={{ top: 5, right: 5, bottom: 5, left: -10 }}
         >
           <CartesianGrid
-            stroke="#fecaca"
+            stroke="#e2e8f0"
             strokeDasharray="3 3"
             vertical={false}
           />
-          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+          <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#64748b" }} />
           <YAxis
             allowDecimals={false}
-            tick={{ fontSize: 11, fill: "#9ca3af" }}
-            width={40}
+            tick={{ fontSize: 12, fill: "#64748b" }}
           />
           <Tooltip
             formatter={(value) => [`${value} Pesanan`, "Jumlah"]}
             labelFormatter={(label) => `Periode: ${label}`}
             contentStyle={{
               fontSize: 12,
-              borderRadius: "0.375rem",
+              borderRadius: "0.5rem",
               boxShadow: "rgba(0, 0, 0, 0.1) 0px 4px 12px",
-              background: "rgba(255, 255, 255, 0.9)",
-              borderColor: "#fecaca",
+              background: "rgba(255, 255, 255, 0.95)",
+              borderColor: "#e2e8f0",
             }}
             itemStyle={{ padding: "2px 0" }}
-            cursor={{ fill: "rgba(239, 68, 68, 0.1)" }}
+            cursor={{ fill: "rgba(245, 158, 11, 0.2)" }}
           />
           <Bar
             dataKey="value"
             name="Jumlah Pesanan"
-            fill="#ef4444"
+            fill="#f59e0b"
             barSize={30}
             radius={[4, 4, 0, 0]}
           />
@@ -105,8 +104,8 @@ const OrdersChart = ({ startDate, endDate }) => {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-red-900 mb-4">
-        Jumlah Pesanan per Bulan
+      <h2 className="text-lg font-semibold text-slate-800 mb-4">
+        Grafik Pesanan
       </h2>
       {content}
     </div>

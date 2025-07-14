@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { toast } from "react-toastify";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaUpload } from "react-icons/fa";
 import Modal from "../Modal";
 import { AppContext } from "../../context/AppContext";
 import { updateProduct } from "../../services/productApi";
@@ -11,7 +11,6 @@ import { getCategories } from "../../services/categoryApi";
 
 const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const { authFetch } = useContext(AppContext);
-
   const [formData, setFormData] = useState({});
   const [categories, setCategories] = useState([]);
   const [newImageFiles, setNewImageFiles] = useState([]);
@@ -22,23 +21,15 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
-  const fetchCategoriesCallback = useCallback(async () => {
-    if (!isOpen || categories.length > 0) return;
-    setLoadingCategories(true);
-    try {
-      const categoriesData = await getCategories(authFetch);
-      setCategories(categoriesData);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error(error.message || "Gagal memuat daftar kategori.");
-    } finally {
-      setLoadingCategories(false);
-    }
-  }, [isOpen, authFetch, categories.length]);
-
   useEffect(() => {
-    fetchCategoriesCallback();
-  }, [fetchCategoriesCallback]);
+    if (isOpen) {
+      setLoadingCategories(true);
+      getCategories(authFetch)
+        .then(setCategories)
+        .catch((err) => toast.error(err.message || "Gagal memuat kategori."))
+        .finally(() => setLoadingCategories(false));
+    }
+  }, [isOpen, authFetch]);
 
   useEffect(() => {
     if (isOpen && product) {
@@ -50,7 +41,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         original_price: product.original_price || "",
         sale_price: product.sale_price || "",
         size: product.size || "",
-        stock: product.stock !== null ? product.stock : "",
+        stock: product.stock ?? "",
         weight: product.weight || "",
         description: product.description || "",
       });
@@ -59,82 +50,52 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
       setNewImagePreviews([]);
       setImagesToDelete([]);
       setErrors({});
-      setLoading(false);
-    }
-    if (!isOpen) {
-      setFormData({});
-      setExistingImages([]);
-      setNewImageFiles([]);
-      setNewImagePreviews([]);
-      setImagesToDelete([]);
-      setErrors({});
-      setLoading(false);
     }
   }, [product, isOpen]);
 
-  useEffect(() => {
-    const previews = [...newImagePreviews];
-    return () => {
-      previews.forEach((preview) => {
-        if (preview && preview.startsWith("blob:")) {
-          URL.revokeObjectURL(preview);
-        }
-      });
-    };
-  }, [newImagePreviews]);
+  const handleChange = useCallback(
+    (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-    if (errors[name]) {
-      setErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
-    }
-    if (errors.message) {
-      setErrors((prevErrors) => ({ ...prevErrors, message: undefined }));
-    }
-  };
-
-  const handleDescriptionChange = (value) => {
-    const descriptionValue = value === "<p><br></p>" ? "" : value;
-    setFormData((prevData) => ({ ...prevData, description: descriptionValue }));
-    if (errors.description) {
-      setErrors((prevErrors) => ({ ...prevErrors, description: undefined }));
-    }
-    if (errors.message) {
-      setErrors((prevErrors) => ({ ...prevErrors, message: undefined }));
-    }
-  };
+  const handleDescriptionChange = useCallback(
+    (value) => {
+      setFormData((prev) => ({
+        ...prev,
+        description: value === "<p><br></p>" ? "" : value,
+      }));
+      if (errors.description) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.description;
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
 
   const handleNewImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    const validImageFiles = files.filter((file) =>
+    const files = Array.from(e.target.files).filter((file) =>
       file.type.startsWith("image/")
     );
-    const currentPreviews = [...newImagePreviews];
-
-    currentPreviews.forEach((preview) => {
-      if (preview && preview.startsWith("blob:")) {
-        URL.revokeObjectURL(preview);
-      }
-    });
-
-    if (validImageFiles.length !== files.length) {
-      toast.warn("Beberapa file yang dipilih bukan gambar dan diabaikan.");
-    }
-
-    setNewImageFiles(validImageFiles);
-    setNewImagePreviews(
-      validImageFiles.map((file) => URL.createObjectURL(file))
-    );
-
-    const imageErrorKeys = Object.keys(errors).filter((key) =>
-      key.startsWith("images")
-    );
-    if (imageErrorKeys.length > 0 || errors.message) {
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        imageErrorKeys.forEach((key) => delete newErrors[key]);
-        delete newErrors.message; // Hapus juga error umum
+    newImagePreviews.forEach(URL.revokeObjectURL);
+    setNewImageFiles(files);
+    setNewImagePreviews(files.map((file) => URL.createObjectURL(file)));
+    if (errors.images) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.images;
         return newErrors;
       });
     }
@@ -143,91 +104,50 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const handleDeleteExistingImage = (imageId) => {
     setImagesToDelete((prev) => [...prev, imageId]);
     setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
-    if (errors.message) {
-      setErrors((prevErrors) => ({ ...prevErrors, message: undefined }));
-    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!product?.id) return;
-
-    setErrors({});
     setLoading(true);
-
     const data = new FormData();
-    Object.keys(formData).forEach((key) => {
-      const value =
-        key === "sale_price" && formData[key] === "" ? "" : formData[key];
-      if (value !== null && value !== undefined) {
-        data.append(key, value);
-      }
-    });
-
-    newImageFiles.forEach((file) => {
-      data.append("images[]", file);
-    });
-
-    imagesToDelete.forEach((imageId) => {
-      data.append("imagesToDelete[]", imageId);
-    });
+    Object.keys(formData).forEach((key) =>
+      data.append(key, formData[key] ?? "")
+    );
+    newImageFiles.forEach((file) => data.append("images[]", file));
+    if (imagesToDelete.length > 0) {
+      imagesToDelete.forEach((id) => data.append("imagesToDelete[]", id));
+    }
 
     try {
       const result = await updateProduct(authFetch, product.id, data);
-
       toast.success(result.message || "Produk berhasil diperbarui.");
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error updating product:", error);
-      const errorMessage = error.message || "Terjadi kesalahan.";
-
       if (error.status === 422 && error.errors) {
-        setErrors(
-          Object.keys(error.errors).reduce((acc, key) => {
-            const frontendKey = key.startsWith("images.")
-              ? "images"
-              : key.startsWith("imagesToDelete.")
-              ? "imagesToDelete"
-              : key;
-            acc[frontendKey] = error.errors[key][0];
-            return acc;
-          }, {})
-        );
+        setErrors(error.errors);
         toast.error("Data yang dimasukkan tidak valid.");
       } else {
-        setErrors({ message: errorMessage });
-        const backendMessage = error?.data?.message;
-        toast.error(
-          `Gagal memperbarui produk: ${backendMessage || errorMessage}`
-        );
+        toast.error(error.message || "Gagal memperbarui produk.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isOpen || !product) {
-    return null;
-  }
+  const handleClose = () => !loading && onClose();
+
+  if (!isOpen) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`Edit Produk: ${product.product_name}`}
-    >
-      <form onSubmit={handleSubmit} noValidate>
-        {errors.message && (
-          <div className="mb-4 rounded bg-red-100 p-3 text-center text-sm text-red-700">
-            {errors.message}
-          </div>
-        )}
-        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-6">
-          <div className="sm:col-span-3">
+    <Modal isOpen={isOpen} onClose={handleClose} title={`Edit Produk`}>
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <label
               htmlFor={`edit-product-name-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Nama Produk
             </label>
@@ -235,148 +155,84 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
               type="text"
               id={`edit-product-name-${product.id}`}
               name="product_name"
-              value={formData.product_name}
+              value={formData.product_name || ""}
               onChange={handleChange}
               required
-              aria-invalid={!!errors.product_name}
-              aria-describedby={
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.product_name
-                  ? `product-name-error-${product.id}`
-                  : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
-                errors.product_name
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.product_name && (
-              <p
-                id={`product-name-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.product_name}
+              <p className="mt-1 text-xs text-red-600">
+                {errors.product_name[0]}
               </p>
             )}
           </div>
 
-          <div className="sm:col-span-3">
+          <div>
             <label
               htmlFor={`edit-product-category-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Kategori
             </label>
             <select
               id={`edit-product-category-${product.id}`}
               name="category_id"
-              value={formData.category_id}
+              value={formData.category_id || ""}
               onChange={handleChange}
               required
               disabled={loadingCategories}
-              aria-invalid={!!errors.category_id}
-              aria-describedby={
-                errors.category_id
-                  ? `category-id-error-${product.id}`
-                  : undefined
-              }
-              className={`block w-full rounded-md border-0 bg-white px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
-                errors.category_id
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+              className={`block w-full px-3 py-2 rounded-md border-slate-300 bg-slate-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                errors.category_id ? "border-red-500" : ""
               }`}
             >
               <option value="" disabled>
-                {loadingCategories ? "Memuat..." : "-- Pilih Kategori --"}
+                {loadingCategories ? "Memuat..." : "-- Pilih --"}
               </option>
               {categories.map((cat) => (
-                <option value={cat.id} key={cat.id}>
+                <option key={cat.id} value={cat.id}>
                   {cat.category_name}
                 </option>
               ))}
             </select>
             {errors.category_id && (
-              <p
-                id={`category-id-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.category_id}
+              <p className="mt-1 text-xs text-red-600">
+                {errors.category_id[0]}
               </p>
             )}
           </div>
 
-          <div className="sm:col-span-3">
+          <div>
             <label
               htmlFor={`edit-product-brand-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              Brand (Opsional)
+              Brand
             </label>
             <input
               type="text"
               id={`edit-product-brand-${product.id}`}
               name="brand"
-              value={formData.brand}
+              value={formData.brand || ""}
               onChange={handleChange}
-              placeholder="Misal: AS Denim"
-              aria-invalid={!!errors.brand}
-              aria-describedby={
-                errors.brand ? `brand-error-${product.id}` : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.brand
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.brand && (
-              <p
-                id={`brand-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.brand}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{errors.brand[0]}</p>
             )}
           </div>
 
-          <div className="sm:col-span-3">
-            <label
-              htmlFor={`edit-product-color-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
-            >
-              Warna (Opsional)
-            </label>
-            <input
-              type="text"
-              id={`edit-product-color-${product.id}`}
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              placeholder="Misal: Biru Tua, Hitam"
-              aria-invalid={!!errors.color}
-              aria-describedby={
-                errors.color ? `color-error-${product.id}` : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
-                errors.color
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
-              }`}
-            />
-            {errors.color && (
-              <p
-                id={`color-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.color}
-              </p>
-            )}
-          </div>
-
-          <div className="sm:col-span-3">
+          <div>
             <label
               htmlFor={`edit-product-original-price-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Harga Asli (Rp)
             </label>
@@ -384,71 +240,54 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
               type="number"
               id={`edit-product-original-price-${product.id}`}
               name="original_price"
-              value={formData.original_price}
+              value={formData.original_price || ""}
               onChange={handleChange}
               required
-              min="1"
-              aria-invalid={!!errors.original_price}
-              aria-describedby={
+              min="0"
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.original_price
-                  ? `original-price-error-${product.id}`
-                  : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
-                errors.original_price
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.original_price && (
-              <p
-                id={`original-price-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.original_price}
+              <p className="mt-1 text-xs text-red-600">
+                {errors.original_price[0]}
               </p>
             )}
           </div>
 
-          <div className="sm:col-span-3">
+          <div>
             <label
               htmlFor={`edit-product-sale-price-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              Harga Diskon (Rp) (Opsional)
+              Harga Diskon (Rp)
             </label>
             <input
               type="number"
               id={`edit-product-sale-price-${product.id}`}
               name="sale_price"
-              value={formData.sale_price}
+              value={formData.sale_price || ""}
               onChange={handleChange}
-              min="1"
-              placeholder="Kosongkan jika tidak diskon"
-              aria-invalid={!!errors.sale_price}
-              aria-describedby={
-                errors.sale_price ? `sale-price-error-${product.id}` : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+              min="0"
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.sale_price
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.sale_price && (
-              <p
-                id={`sale-price-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.sale_price}
+              <p className="mt-1 text-xs text-red-600">
+                {errors.sale_price[0]}
               </p>
             )}
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <label
               htmlFor={`edit-product-size-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Ukuran
             </label>
@@ -456,34 +295,24 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
               type="text"
               id={`edit-product-size-${product.id}`}
               name="size"
-              value={formData.size}
+              value={formData.size || ""}
               onChange={handleChange}
               required
-              placeholder="Misal: M, L / 28, 29"
-              aria-invalid={!!errors.size}
-              aria-describedby={
-                errors.size ? `size-error-${product.id}` : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.size
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.size && (
-              <p
-                id={`size-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.size}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{errors.size[0]}</p>
             )}
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <label
               htmlFor={`edit-product-stock-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Stok
             </label>
@@ -491,35 +320,25 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
               type="number"
               id={`edit-product-stock-${product.id}`}
               name="stock"
-              value={formData.stock}
+              value={formData.stock || ""}
               onChange={handleChange}
               required
               min="0"
-              placeholder="Misal: 100"
-              aria-invalid={!!errors.stock}
-              aria-describedby={
-                errors.stock ? `stock-error-${product.id}` : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.stock
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.stock && (
-              <p
-                id={`stock-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.stock}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{errors.stock[0]}</p>
             )}
           </div>
 
           <div className="sm:col-span-2">
             <label
               htmlFor={`edit-product-weight-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
               Berat (gram)
             </label>
@@ -527,172 +346,126 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
               type="number"
               id={`edit-product-weight-${product.id}`}
               name="weight"
-              value={formData.weight}
+              value={formData.weight || ""}
               onChange={handleChange}
               required
-              min="1"
-              placeholder="Misal: 500"
-              aria-invalid={!!errors.weight}
-              aria-describedby={
-                errors.weight ? `weight-error-${product.id}` : undefined
-              }
-              className={`block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${
+              min="0"
+              className={`w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
                 errors.weight
-                  ? "ring-red-500 focus:ring-red-500"
-                  : "ring-gray-300 focus:ring-indigo-600"
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-slate-300 focus:ring-blue-500 bg-slate-50"
               }`}
             />
             {errors.weight && (
-              <p
-                id={`weight-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.weight}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{errors.weight[0]}</p>
             )}
           </div>
 
-          <div className="sm:col-span-full">
-            <label className="mb-1.5 block text-sm font-medium leading-6 text-gray-900">
-              Deskripsi (Opsional)
+          <div className="sm:col-span-2">
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              Deskripsi
             </label>
             <ReactQuill
               theme="snow"
-              value={formData.description}
+              value={formData.description || ""}
               onChange={handleDescriptionChange}
-              className="h-48 rounded-md bg-white mb-12 md:mb-6 [&_.ql-container]:rounded-b-md [&_.ql-toolbar]:rounded-t-md [&_.ql-toolbar]:border-gray-300 [&_.ql-container]:border-gray-300"
-              modules={{
-                toolbar: [
-                  [{ header: [1, 2, 3, false] }],
-                  ["bold", "italic", "underline", "strike", "blockquote"],
-                  [
-                    { list: "ordered" },
-                    { list: "bullet" },
-                    { indent: "-1" },
-                    { indent: "+1" },
-                  ],
-                  ["link"],
-                  ["clean"],
-                ],
-              }}
+              className="bg-white [&_.ql-toolbar]:rounded-t-lg [&_.ql-container]:rounded-b-lg [&_.ql-toolbar]:border-slate-300 [&_.ql-container]:border-slate-300"
             />
             {errors.description && (
-              <p className="mt-1 text-xs text-red-600">{errors.description}</p>
-            )}
-          </div>
-
-          <div className="sm:col-span-full">
-            <label className="mb-1.5 block text-sm font-medium leading-6 text-gray-900">
-              Gambar Produk Saat Ini
-            </label>
-            {existingImages.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-3 rounded-lg border border-dashed border-gray-900/25 p-4">
-                {existingImages.map((img) => (
-                  <div key={img.id} className="relative flex-shrink-0">
-                    <img
-                      src={img.image_url}
-                      alt={`Gambar ${img.id}`}
-                      loading="lazy"
-                      className="h-24 w-24 rounded-md border object-cover shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteExistingImage(img.id)}
-                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-red-600 bg-red-500 text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                      title="Hapus Gambar Ini"
-                      aria-label="Hapus Gambar Ini"
-                    >
-                      <FaTimes className="h-3 w-3" />
-                    </button>
-                    {img.is_primary && (
-                      <span className="absolute bottom-1 right-1 rounded-sm bg-indigo-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                        Utama
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-1 text-sm text-gray-500">
-                Tidak ada gambar saat ini.
-              </p>
-            )}
-            {errors.imagesToDelete && (
               <p className="mt-1 text-xs text-red-600">
-                {errors.imagesToDelete}
+                {errors.description[0]}
               </p>
             )}
           </div>
 
-          <div className="sm:col-span-full">
-            <label
-              htmlFor={`edit-product-images-${product.id}`}
-              className="mb-1.5 block text-sm font-medium leading-6 text-gray-900"
-            >
-              Tambah Gambar Baru (Opsional)
-            </label>
-            <input
-              type="file"
-              id={`edit-product-images-${product.id}`}
-              multiple
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleNewImageChange}
-              aria-invalid={!!errors.images}
-              aria-describedby={
-                errors.images ? `images-error-${product.id}` : undefined
-              }
-              className={`block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-600 hover:file:bg-indigo-100 focus:outline-none ${
-                errors.images ? "ring-1 ring-red-500 rounded-md" : ""
-              }`}
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Format: JPG, PNG, WEBP. Maks: 2MB per file.
-            </p>
-            {errors.images && (
-              <p
-                id={`images-error-${product.id}`}
-                className="mt-1 text-xs text-red-600"
-              >
-                {errors.images}
-              </p>
-            )}
+          <div className="sm:col-span-2 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700">
+                Gambar Saat Ini
+              </label>
+              {existingImages.length > 0 ? (
+                <div className="flex flex-wrap gap-2 rounded-lg border border-slate-200 p-2 mt-2">
+                  {existingImages.map((img) => (
+                    <div key={img.id} className="relative">
+                      <img
+                        src={img.image_url}
+                        alt={`Gambar ${img.id}`}
+                        className="h-20 w-20 rounded-md object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExistingImage(img.id)}
+                        title="Hapus Gambar Ini"
+                        className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 text-white hover:bg-red-700"
+                      >
+                        <FaTimes className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500 mt-2">Tidak ada gambar.</p>
+              )}
+            </div>
 
-            {newImagePreviews.length > 0 && (
-              <div className="mt-4">
-                <p className="mb-1 text-xs font-medium text-gray-600">
-                  Pratinjau Gambar Baru:
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {newImagePreviews.map((src, index) => (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Tambah Gambar Baru
+              </label>
+              <label
+                htmlFor={`edit-product-images-${product.id}`}
+                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-100 ${
+                  errors.images ? "border-red-500" : "border-slate-300"
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center text-slate-500">
+                  <FaUpload className="w-8 h-8" />
+                  <p className="mt-2 text-sm">Klik untuk unggah</p>
+                </div>
+                <input
+                  id={`edit-product-images-${product.id}`}
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  onChange={handleNewImageChange}
+                  accept="image/jpeg,image/png,image/webp"
+                />
+              </label>
+              {newImagePreviews.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {newImagePreviews.map((src, i) => (
                     <img
-                      key={index}
+                      key={i}
                       src={src}
-                      alt={`Pratinjau Baru ${index + 1}`}
-                      className="h-24 w-24 rounded-md border object-cover shadow-sm"
+                      alt={`Preview ${i}`}
+                      className="h-20 w-20 rounded-md border border-slate-200 object-cover"
                     />
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+              {errors.images && (
+                <p className="text-xs text-red-600">{errors.images[0]}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="mt-8 flex justify-end gap-3 border-t border-gray-200 pt-5">
+        <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading || loadingCategories}
-            className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none ${
               loading || loadingCategories
-                ? "cursor-not-allowed bg-indigo-400"
-                : "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+                ? "cursor-not-allowed bg-blue-400"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {loading ? "Memperbarui..." : "Perbarui Produk"}
@@ -709,5 +482,4 @@ EditProductModal.propTypes = {
   product: PropTypes.object,
   onSuccess: PropTypes.func.isRequired,
 };
-
 export default EditProductModal;

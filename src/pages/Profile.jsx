@@ -7,9 +7,9 @@ import { AppContext } from "../context/AppContext";
 import { getOwnAdminProfile } from "../services/adminApi";
 
 const DetailItem = ({ label, value }) => (
-  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-    <dt className="text-sm font-medium leading-6 text-gray-500">{label}</dt>
-    <dd className="mt-1 text-sm leading-6 text-gray-800 sm:col-span-2 sm:mt-0">
+  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+    <dt className="text-sm font-medium text-slate-500">{label}</dt>
+    <dd className="mt-1 text-sm text-slate-800 sm:col-span-2 sm:mt-0">
       {value ?? "-"}
     </dd>
   </div>
@@ -32,19 +32,13 @@ const Profile = () => {
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "-";
-    try {
-      return new Date(dateString).toLocaleString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      });
-    } catch (e) {
-      return "Tanggal tidak valid";
-    }
+    return new Date(dateString).toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const fetchProfile = useCallback(async () => {
@@ -61,7 +55,6 @@ const Profile = () => {
       const errorMessage = error.message || "Gagal mengambil data profil.";
       setFetchError(errorMessage);
       toast.error(errorMessage);
-      setAdminProfile(null);
     } finally {
       setLoading(false);
     }
@@ -83,7 +76,7 @@ const Profile = () => {
   let content;
   if (loading) {
     content = (
-      <div className="py-10 text-center text-gray-500">Memuat profil...</div>
+      <div className="py-10 text-center text-slate-500">Memuat profil...</div>
     );
   } else if (fetchError) {
     content = (
@@ -91,7 +84,7 @@ const Profile = () => {
         Error: {fetchError}.
         <button
           onClick={fetchProfile}
-          className="ml-2 text-sm text-indigo-600 hover:underline"
+          className="ml-2 text-sm text-blue-600 hover:underline"
         >
           Coba lagi
         </button>
@@ -99,22 +92,22 @@ const Profile = () => {
     );
   } else if (adminProfile) {
     content = (
-      <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div className="flex items-center justify-between px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-base font-semibold leading-6 text-gray-900">
+      <div className="overflow-hidden bg-white shadow-sm border border-slate-200 rounded-lg">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-800">
             Informasi Akun Admin
           </h3>
           <button
             type="button"
             onClick={openEditModal}
-            className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-300 hover:bg-indigo-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
           >
-            <FaEdit className="inline-block mr-1 h-4 w-4" aria-hidden="true" />{" "}
+            <FaEdit className="h-4 w-4" aria-hidden="true" />
             Edit Profil
           </button>
         </div>
-        <div className="px-4 py-5 sm:p-6">
-          <dl className="divide-y divide-gray-100">
+        <div className="p-6">
+          <dl className="divide-y divide-slate-100">
             <DetailItem label="ID Pengguna" value={adminProfile.id} />
             <DetailItem label="Nama Lengkap" value={adminProfile.name} />
             <DetailItem label="Alamat Email" value={adminProfile.email} />
@@ -132,17 +125,15 @@ const Profile = () => {
     );
   } else {
     content = (
-      <div className="py-10 text-center text-gray-500">
+      <div className="py-10 text-center text-slate-500">
         Data profil tidak tersedia.
       </div>
     );
   }
 
   return (
-    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900 md:text-3xl mb-6">
-        Profil Admin
-      </h1>
+    <div className="space-y-6 mt-4">
+      <h1 className="text-3xl font-bold text-slate-800">Profil Admin</h1>
       {content}
 
       {adminProfile && (

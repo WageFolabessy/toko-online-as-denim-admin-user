@@ -8,11 +8,11 @@ import FilterComponent from "../components/Shipment/FilterComponent";
 import { AppContext } from "../context/AppContext";
 import { getShipments } from "../services/shipmentApi";
 
-const StatusBadge = ({ status = "shipment" }) => {
+const StatusBadge = ({ status }) => {
   const statusText = status
     ? status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     : "N/A";
-  let colorClass = "bg-gray-100 text-gray-800";
+  let colorClass = "bg-slate-100 text-slate-800";
   const colors = {
     pending: "bg-blue-100 text-blue-800",
     shipped: "bg-cyan-100 text-cyan-800",
@@ -27,7 +27,7 @@ const StatusBadge = ({ status = "shipment" }) => {
     </span>
   );
 };
-StatusBadge.propTypes = { status: PropTypes.string, type: PropTypes.string };
+StatusBadge.propTypes = { status: PropTypes.string };
 
 const Shipment = () => {
   const { authFetch } = useContext(AppContext);
@@ -39,25 +39,20 @@ const Shipment = () => {
   const [filterText, setFilterText] = useState("");
   const [resetPaginationToggle, setResetPaginationToggle] = useState(false);
 
-  const fetchShipments = useCallback(
-    async (/* page = 1, limit = 10, search = '' */) => {
-      setLoadingShipments(true);
-      setFetchError(null);
-      try {
-        const responseData = await getShipments(authFetch /*, params */);
-        setShipments(responseData.data || []);
-      } catch (error) {
-        console.error("Error fetching shipments:", error);
-        const errorMessage = error.message || "Gagal memuat data pengiriman.";
-        setFetchError(errorMessage);
-        toast.error(errorMessage);
-        setShipments([]);
-      } finally {
-        setLoadingShipments(false);
-      }
-    },
-    [authFetch]
-  );
+  const fetchShipments = useCallback(async () => {
+    setLoadingShipments(true);
+    setFetchError(null);
+    try {
+      const responseData = await getShipments(authFetch);
+      setShipments(responseData.data || []);
+    } catch (error) {
+      const errorMessage = error.message || "Gagal memuat data pengiriman.";
+      setFetchError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoadingShipments(false);
+    }
+  }, [authFetch]);
 
   useEffect(() => {
     document.title = "Manajemen Pengiriman";
@@ -65,8 +60,8 @@ const Shipment = () => {
   }, [fetchShipments]);
 
   const handleUpdateSuccess = useCallback(() => {
-    fetchShipments(/* currentPage, perPage, filterText */);
-  }, [fetchShipments /*, currentPage, perPage, filterText */]);
+    fetchShipments();
+  }, [fetchShipments]);
 
   const openDetailModal = (shipment) => {
     setSelectedShipment(shipment);
@@ -77,30 +72,18 @@ const Shipment = () => {
     setIsDetailModalOpen(false);
   };
 
-  // Filter client-side
   const filteredShipments = useMemo(
     () =>
-      shipments.filter(
-        (shipment) =>
-          (shipment.order?.order_number &&
-            shipment.order.order_number
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (shipment.order?.user?.name &&
-            shipment.order.user.name
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (shipment.tracking_number &&
-            shipment.tracking_number
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (shipment.courier &&
-            shipment.courier
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (shipment.status &&
-            shipment.status.toLowerCase().includes(filterText.toLowerCase()))
-      ),
+      shipments.filter((shipment) => {
+        const filter = filterText.toLowerCase();
+        return (
+          shipment.order?.order_number?.toLowerCase().includes(filter) ||
+          shipment.order?.user_name?.toLowerCase().includes(filter) ||
+          shipment.tracking_number?.toLowerCase().includes(filter) ||
+          shipment.courier?.toLowerCase().includes(filter) ||
+          shipment.status?.toLowerCase().includes(filter)
+        );
+      }),
     [shipments, filterText]
   );
 
@@ -111,13 +94,9 @@ const Shipment = () => {
         setFilterText("");
       }
     };
-    const handleFilterChange = (e) => {
-      setFilterText(e.target.value);
-    };
-
     return (
       <FilterComponent
-        onFilter={handleFilterChange}
+        onFilter={(e) => setFilterText(e.target.value)}
         onClear={handleClear}
         filterText={filterText}
       />
@@ -131,21 +110,20 @@ const Shipment = () => {
         selector: (row, index) => index + 1,
         width: "60px",
         center: true,
-        sortable: false,
       },
       {
         name: "No. Pesanan",
         selector: (row) => row.order?.order_number ?? "N/A",
         sortable: true,
-        minWidth: "150px",
         wrap: true,
+        minWidth: "160px",
       },
       {
         name: "Pelanggan",
         selector: (row) => row.order?.user_name ?? "N/A",
         sortable: true,
-        minWidth: "150px",
         wrap: true,
+        minWidth: "180px",
       },
       {
         name: "Tgl Input",
@@ -163,26 +141,26 @@ const Shipment = () => {
         name: "Kurir",
         selector: (row) => row.courier ?? "-",
         sortable: true,
-        minWidth: "100px",
+        minWidth: "120px",
       },
       {
         name: "Layanan",
         selector: (row) => row.service ?? "-",
         sortable: true,
-        minWidth: "100px",
+        minWidth: "120px",
       },
       {
         name: "No. Resi",
         selector: (row) => row.tracking_number,
         cell: (row) => row.tracking_number || "-",
         sortable: true,
-        minWidth: "150px",
+        minWidth: "180px",
         wrap: true,
       },
       {
         name: "Status",
         selector: (row) => row.status,
-        cell: (row) => <StatusBadge status={row.status} type="shipment" />,
+        cell: (row) => <StatusBadge status={row.status} />,
         sortable: true,
         center: true,
         minWidth: "120px",
@@ -193,17 +171,13 @@ const Shipment = () => {
           <div className="flex items-center justify-center">
             <button
               onClick={() => openDetailModal(row)}
-              className="rounded p-1.5 text-indigo-600 transition-colors hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
               title="Lihat Detail & Update Resi/Status"
-              aria-label={`Detail Pengiriman ${row.order?.order_number}`}
             >
-              <FaEye className="h-4 w-4 md:h-5 md:w-5" />
+              <FaEye className="h-5 w-5" />
             </button>
           </div>
         ),
-        ignoreRowClick: true,
-        allowOverflow: true,
-        button: true,
         center: true,
         minWidth: "80px",
       },
@@ -213,30 +187,67 @@ const Shipment = () => {
 
   const customStyles = useMemo(
     () => ({
-      /* ... styles ... */
+      rows: {
+        style: {
+          minHeight: "60px",
+          "&:not(:last-of-type)": { borderBottom: "1px solid #f1f5f9" },
+        },
+        highlightOnHoverStyle: {
+          backgroundColor: "#f8fafc",
+          borderBottomColor: "#f1f5f9",
+        },
+      },
+      headRow: {
+        style: {
+          backgroundColor: "#f8fafc",
+          minHeight: "56px",
+          borderBottom: "1px solid #e2e8f0",
+        },
+      },
+      headCells: {
+        style: {
+          fontSize: "0.75rem",
+          fontWeight: "600",
+          color: "#475569",
+          textTransform: "uppercase",
+          padding: "1rem",
+        },
+      },
+      cells: {
+        style: {
+          fontSize: "0.875rem",
+          color: "#334155",
+          padding: "1rem",
+          lineHeight: "1.5",
+        },
+      },
+      pagination: { style: { borderTop: "1px solid #e2e8f0" } },
+      subHeader: { style: { padding: "1rem" } },
     }),
     []
   );
+
   const paginationOptions = useMemo(
     () => ({
-      /* ... options ... */
+      rowsPerPageText: "Baris per halaman:",
+      rangeSeparatorText: "dari",
     }),
     []
   );
 
   return (
-    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900 md:text-3xl">
+    <div className="space-y-6 mt-4">
+      <h1 className="text-3xl font-bold text-slate-800">
         Manajemen Pengiriman
       </h1>
 
-      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
         {loadingShipments ? (
-          <div className="p-6 text-center text-gray-500">
+          <div className="p-10 text-center text-slate-500">
             Memuat data pengiriman...
           </div>
         ) : fetchError ? (
-          <div className="p-6 text-center text-red-500">
+          <div className="p-10 text-center text-red-600">
             Error: {fetchError}. Coba refresh halaman.
           </div>
         ) : (
@@ -244,25 +255,16 @@ const Shipment = () => {
             columns={columns}
             data={filteredShipments}
             pagination
-            paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50]}
             paginationComponentOptions={paginationOptions}
             paginationResetDefaultPage={resetPaginationToggle}
-            // Progress & Pagination server-side (opsional)
-            // progressPending={loadingShipments}
-            // paginationServer
-            // paginationTotalRows={totalRows}
-            // onChangeRowsPerPage={handlePerRowsChange}
-            // onChangePage={handlePageChange}
             subHeader
             subHeaderComponent={subHeaderComponent}
             persistTableHead
             responsive
             highlightOnHover
-            striped
             customStyles={customStyles}
             noDataComponent={
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-16 text-center text-slate-500">
                 Tidak ada data pengiriman ditemukan.
               </div>
             }
@@ -270,7 +272,6 @@ const Shipment = () => {
         )}
       </div>
 
-      {/* Modal Detail & Update Pengiriman */}
       <ShipmentDetailModal
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}

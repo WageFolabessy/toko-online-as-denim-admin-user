@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import Modal from "../Modal";
 import { AppContext } from "../../context/AppContext";
 import { deleteCategory } from "../../services/categoryApi";
+import { FaExclamationTriangle } from "react-icons/fa";
 
 const DeleteCategoryModal = ({ isOpen, onClose, category, onSuccess }) => {
   const { authFetch } = useContext(AppContext);
@@ -17,46 +18,55 @@ const DeleteCategoryModal = ({ isOpen, onClose, category, onSuccess }) => {
 
   const handleDelete = async () => {
     if (!category?.id) return;
-
     setLoading(true);
     try {
       const response = await deleteCategory(authFetch, category.id);
-
       toast.success(response?.message || "Kategori berhasil dihapus.");
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error deleting category:", error);
       toast.error(error.message || "Gagal menghapus kategori.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isOpen || !category) {
-    return null;
-  }
+  const handleClose = () => !loading && onClose();
+
+  if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Konfirmasi Hapus Kategori">
-      <p className="mb-6 text-sm text-gray-600">
-        Apakah Anda yakin ingin menghapus kategori{" "}
-        <strong className="font-medium text-gray-900">
-          {category.category_name}
-        </strong>
-        ?
-        <br />
-        <span className="text-xs text-red-600">
-          Perhatian: Menghapus kategori mungkin akan mempengaruhi produk yang
-          terkait. Tindakan ini tidak dapat diurungkan.
-        </span>
-      </p>
-      <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Konfirmasi Hapus">
+      <div className="flex items-start gap-4">
+        <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+          <FaExclamationTriangle
+            className="h-6 w-6 text-red-600"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-slate-800">
+            Hapus Kategori
+          </h3>
+          <p className="mt-2 text-sm text-slate-600">
+            Apakah Anda yakin ingin menghapus kategori{" "}
+            <strong className="font-medium text-slate-900">
+              {category.category_name}
+            </strong>
+            ?
+            <br />
+            <span className="mt-1 block text-xs text-red-600">
+              Tindakan ini tidak dapat diurungkan.
+            </span>
+          </p>
+        </div>
+      </div>
+      <div className="mt-5 flex justify-end gap-3 border-t border-slate-200 pt-4">
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           disabled={loading}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
         >
           Batal
         </button>
@@ -64,10 +74,10 @@ const DeleteCategoryModal = ({ isOpen, onClose, category, onSuccess }) => {
           type="button"
           onClick={handleDelete}
           disabled={loading}
-          className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none ${
             loading
               ? "cursor-not-allowed bg-red-400"
-              : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+              : "bg-red-600 hover:bg-red-700"
           }`}
         >
           {loading ? "Menghapus..." : "Ya, Hapus"}

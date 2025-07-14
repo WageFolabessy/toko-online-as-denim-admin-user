@@ -20,38 +20,31 @@ const StatusBadge = ({ status, type = "order" }) => {
   const statusText = status
     ? status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     : "N/A";
-  let colorClass = "bg-gray-100 text-gray-800";
-
-  if (type === "order") {
-    const colors = {
+  let colorClass = "bg-slate-100 text-slate-800";
+  const colors = {
+    order: {
       cancelled: "bg-red-100 text-red-800",
       awaiting_payment: "bg-yellow-100 text-yellow-800",
       pending: "bg-blue-100 text-blue-800",
       processed: "bg-purple-100 text-purple-800",
       shipped: "bg-cyan-100 text-cyan-800",
       delivered: "bg-green-100 text-green-800",
-      failed: "bg-gray-100 text-gray-800",
-    };
-    colorClass = colors[status] || colorClass;
-  } else if (type === "payment") {
-    const colors = {
+      failed: "bg-slate-100 text-slate-800",
+    },
+    payment: {
       pending: "bg-yellow-100 text-yellow-800",
       paid: "bg-green-100 text-green-800",
       settlement: "bg-green-100 text-green-800",
-      completed: "bg-green-100 text-green-800",
+      expired: "bg-slate-100 text-slate-800",
       failed: "bg-red-100 text-red-800",
-      expired: "bg-gray-100 text-gray-800",
-    };
-    colorClass = colors[status] || colorClass;
-  } else if (type === "shipment") {
-    const colors = {
+    },
+    shipment: {
       pending: "bg-blue-100 text-blue-800",
       shipped: "bg-cyan-100 text-cyan-800",
       delivered: "bg-green-100 text-green-800",
-    };
-    colorClass = colors[status] || colorClass;
-  }
-
+    },
+  };
+  colorClass = colors[type]?.[status] || colorClass;
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colorClass}`}
@@ -75,67 +68,49 @@ const Order = () => {
   const [filterText, setFilterText] = useState("");
   const [resetPaginationToggle, setResetPaginationToggle] = useState(false);
 
-  const fetchOrders = useCallback(
-    async (/* page = 1, limit = 10, search = '' */) => {
-      setLoadingOrders(true);
-      setFetchError(null);
-      try {
-        const responseData = await getOrders(authFetch /*, params */);
-        setOrders(responseData.data || []);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        const errorMessage = error.message || "Gagal memuat data pesanan.";
-        setFetchError(errorMessage);
-        toast.error(errorMessage);
-        setOrders([]);
-      } finally {
-        setLoadingOrders(false);
-      }
-    },
-    [authFetch]
-  );
+  const fetchOrders = useCallback(async () => {
+    setLoadingOrders(true);
+    setFetchError(null);
+    try {
+      const responseData = await getOrders(authFetch);
+      setOrders(responseData.data || []);
+    } catch (error) {
+      const errorMessage = error.message || "Gagal memuat data pesanan.";
+      setFetchError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }, [authFetch]);
 
   useEffect(() => {
     document.title = "Manajemen Pesanan";
-    fetchOrders(); // Fetch halaman pertama
+    fetchOrders();
   }, [fetchOrders]);
 
   const handleUpdateSuccess = useCallback(() => {
     fetchOrders();
-  }, [fetchOrders /*, currentPage, perPage, filterText */]);
+  }, [fetchOrders]);
 
   const openDetailModal = (order) => {
     setSelectedOrder(order);
     setIsDetailModalOpen(true);
   };
-  const closeDetailModal = () => {
-    setSelectedOrder(null);
-    setIsDetailModalOpen(false);
-  };
+  const closeDetailModal = () => setIsDetailModalOpen(false);
 
   const filteredOrders = useMemo(
     () =>
-      orders.filter(
-        (order) =>
-          (order.order_number &&
-            order.order_number
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (order.user?.name &&
-            order.user.name.toLowerCase().includes(filterText.toLowerCase())) ||
-          (order.user?.email &&
-            order.user.email
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (order.payment_status &&
-            order.payment_status
-              .toLowerCase()
-              .includes(filterText.toLowerCase())) ||
-          (order.shipment_status &&
-            order.shipment_status
-              .toLowerCase()
-              .includes(filterText.toLowerCase()))
-      ),
+      orders.filter((order) => {
+        const filter = filterText.toLowerCase();
+        return (
+          order.order_number?.toLowerCase().includes(filter) ||
+          order.user?.name?.toLowerCase().includes(filter) ||
+          order.user?.email?.toLowerCase().includes(filter) ||
+          order.payment_status?.replace(/_/g, " ").includes(filter) ||
+          order.shipment_status?.replace(/_/g, " ").includes(filter) ||
+          order.status?.replace(/_/g, " ").includes(filter)
+        );
+      }),
     [orders, filterText]
   );
 
@@ -146,19 +121,14 @@ const Order = () => {
         setFilterText("");
       }
     };
-    const handleFilterChange = (e) => {
-      const newFilterText = e.target.value;
-      setFilterText(newFilterText);
-    };
-
     return (
       <FilterComponent
-        onFilter={handleFilterChange}
+        onFilter={(e) => setFilterText(e.target.value)}
         onClear={handleClear}
         filterText={filterText}
       />
     );
-  }, [filterText, resetPaginationToggle /*, perPage */]);
+  }, [filterText, resetPaginationToggle]);
 
   const columns = useMemo(
     () => [
@@ -167,21 +137,20 @@ const Order = () => {
         selector: (row, index) => index + 1,
         width: "60px",
         center: true,
-        sortable: false,
       },
       {
         name: "No. Pesanan",
         selector: (row) => row.order_number,
         sortable: true,
-        minWidth: "150px",
         wrap: true,
+        minWidth: "160px",
       },
       {
         name: "Pelanggan",
         selector: (row) => row.user?.name ?? "N/A",
         sortable: true,
-        minWidth: "150px",
         wrap: true,
+        minWidth: "180px",
       },
       {
         name: "Tgl Pesan",
@@ -193,10 +162,9 @@ const Order = () => {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
-            hour12: false,
           }),
         sortable: true,
-        minWidth: "130px",
+        minWidth: "150px",
       },
       {
         name: "Total",
@@ -214,7 +182,7 @@ const Order = () => {
         ),
         sortable: true,
         center: true,
-        minWidth: "120px",
+        minWidth: "130px",
       },
       {
         name: "Pengiriman",
@@ -227,7 +195,7 @@ const Order = () => {
         minWidth: "120px",
       },
       {
-        name: "Status Pesanan",
+        name: "Status",
         selector: (row) => row.status,
         cell: (row) => <StatusBadge status={row.status} type="order" />,
         sortable: true,
@@ -240,81 +208,58 @@ const Order = () => {
           <div className="flex items-center justify-center">
             <button
               onClick={() => openDetailModal(row)}
-              className="rounded p-1.5 text-indigo-600 transition-colors hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
               title="Lihat Detail & Update Status"
-              aria-label={`Detail Pesanan ${row.order_number}`}
             >
-              <FaEye className="h-4 w-4 md:h-5 md:w-5" />
+              <FaEye className="h-5 w-5" />
             </button>
           </div>
         ),
-        ignoreRowClick: true,
-        allowOverflow: true,
-        button: true,
         center: true,
         minWidth: "80px",
       },
     ],
     []
-  ); // Dependensi kosong
+  );
 
   const customStyles = useMemo(
     () => ({
-      table: {
+      rows: {
         style: {
-          borderRadius: "0.5rem",
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
+          minHeight: "60px",
+          "&:not(:last-of-type)": { borderBottom: "1px solid #f1f5f9" },
         },
-      },
-      header: {
-        style: {
-          fontSize: "1.125rem",
-          fontWeight: "600",
-          padding: "1rem",
-          backgroundColor: "#f9fafb",
-          borderBottom: "1px solid #e5e7eb",
+        highlightOnHoverStyle: {
+          backgroundColor: "#f8fafc",
+          borderBottomColor: "#f1f5f9",
         },
-      },
-      subHeader: {
-        style: { padding: "1rem 1rem 0.5rem 1rem", backgroundColor: "#ffffff" },
       },
       headRow: {
         style: {
-          backgroundColor: "#f3f4f6",
-          borderBottomWidth: "1px",
-          minHeight: "40px",
+          backgroundColor: "#f8fafc",
+          minHeight: "56px",
+          borderBottom: "1px solid #e2e8f0",
         },
       },
       headCells: {
         style: {
           fontSize: "0.75rem",
           fontWeight: "600",
-          padding: "0.5rem 1rem",
-          color: "#4b5563",
+          color: "#475569",
           textTransform: "uppercase",
-          "&:last-of-type": { justifyContent: "center" },
+          padding: "1rem",
         },
       },
       cells: {
         style: {
           fontSize: "0.875rem",
-          padding: "0.75rem 1rem",
-          color: "#1f2937",
-          borderBottom: "1px solid #f3f4f6",
-          minHeight: "50px",
+          color: "#334155",
+          padding: "1rem",
+          lineHeight: "1.5",
         },
       },
-      pagination: {
-        style: {
-          borderTop: "1px solid #e5e7eb",
-          padding: "0.5rem 1rem",
-          fontSize: "0.875rem",
-        },
-      },
-      noData: {
-        style: { padding: "2rem", textAlign: "center", color: "#6b7280" },
-      },
+      pagination: { style: { borderTop: "1px solid #e2e8f0" } },
+      subHeader: { style: { padding: "1rem" } },
     }),
     []
   );
@@ -323,25 +268,21 @@ const Order = () => {
     () => ({
       rowsPerPageText: "Baris per halaman:",
       rangeSeparatorText: "dari",
-      selectAllRowsItem: true,
-      selectAllRowsItemText: "Semua",
     }),
     []
   );
 
   return (
-    <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900 md:text-3xl">
-        Manajemen Pesanan
-      </h1>
+    <div className="space-y-6 mt-4">
+      <h1 className="text-3xl font-bold text-slate-800">Manajemen Pesanan</h1>
 
-      <div className="overflow-hidden rounded-lg bg-white shadow-md p-4">
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
         {loadingOrders ? (
-          <div className="p-6 text-center text-gray-500">
+          <div className="p-10 text-center text-slate-500">
             Memuat data pesanan...
           </div>
         ) : fetchError ? (
-          <div className="p-6 text-center text-red-500">
+          <div className="p-10 text-center text-red-600">
             Error: {fetchError}. Coba refresh halaman.
           </div>
         ) : (
@@ -349,25 +290,16 @@ const Order = () => {
             columns={columns}
             data={filteredOrders}
             pagination
-            paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 15, 20, 50]}
             paginationComponentOptions={paginationOptions}
             paginationResetDefaultPage={resetPaginationToggle}
-            // Progress & Pagination server-side (opsional)
-            // progressPending={loadingOrders}
-            // paginationServer
-            // paginationTotalRows={totalRows}
-            // onChangeRowsPerPage={handlePerRowsChange}
-            // onChangePage={handlePageChange}
             subHeader
             subHeaderComponent={subHeaderComponent}
             persistTableHead
             responsive
             highlightOnHover
-            striped
             customStyles={customStyles}
             noDataComponent={
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-16 text-center text-slate-500">
                 Tidak ada data pesanan ditemukan.
               </div>
             }
